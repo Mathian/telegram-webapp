@@ -8,57 +8,24 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-<!-- Firebase v9 compat (CDN) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
-<!-- TON Connect -->
-<script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
 <style>
-/* ===== VARIABLES ===== */
 :root {
-  --bg: #0a0a0a;
-  --bg2: #111111;
-  --bg3: #181818;
-  --bg4: #202020;
-  --card: #141414;
-  --border: #252525;
-  --border2: #2e2e2e;
-  --y: #f5c518;
-  --y2: #ffd700;
-  --ydim: rgba(245,197,24,0.12);
-  --yglow: rgba(245,197,24,0.3);
-  --text: #f2f2f2;
-  --text2: #8a8a8a;
-  --text3: #484848;
-  --green: #22c55e;
-  --red: #ef4444;
-  --blue: #3b82f6;
-  --orange: #f97316;
-  --r: 14px;
-  --r2: 10px;
-  --nav: 64px;
-  --ease: cubic-bezier(.4,0,.2,1);
-  --t: .22s;
+  --bg: #0a0a0a; --bg2: #111111; --bg3: #181818; --bg4: #202020;
+  --card: #141414; --border: #252525; --border2: #2e2e2e;
+  --y: #f5c518; --y2: #ffd700; --ydim: rgba(245,197,24,0.12); --yglow: rgba(245,197,24,0.3);
+  --text: #f2f2f2; --text2: #8a8a8a; --text3: #484848;
+  --green: #22c55e; --red: #ef4444; --blue: #3b82f6; --orange: #f97316;
+  --r: 14px; --r2: 10px; --nav: 64px; --ease: cubic-bezier(.4,0,.2,1); --t: .22s;
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif}
-/* ===== SCREENS ===== */
-.screen{
-  position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);
-  opacity:0;pointer-events:none;transform:translateY(16px);
-  transition:opacity var(--t) var(--ease),transform var(--t) var(--ease);overflow:hidden;
-}
+.screen{position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);opacity:0;pointer-events:none;transform:translateY(16px);transition:opacity var(--t) var(--ease),transform var(--t) var(--ease);overflow:hidden;}
 .screen.active{opacity:1;pointer-events:all;transform:none}
-
-/* ===== SPLASH ===== */
-#s-splash{align-items:center;justify-content:center;
-  background:radial-gradient(ellipse at 50% 40%,rgba(245,197,24,.1) 0%,transparent 65%),var(--bg)}
-.splash-icon{
-  width:96px;height:96px;border-radius:28px;background:var(--y);
-  display:flex;align-items:center;justify-content:center;font-size:46px;
-  box-shadow:0 0 80px var(--yglow);animation:spPulse 2s ease-in-out infinite;margin-bottom:20px;
-}
+#s-splash{align-items:center;justify-content:center;background:radial-gradient(ellipse at 50% 40%,rgba(245,197,24,.1) 0%,transparent 65%),var(--bg)}
+.splash-icon{width:96px;height:96px;border-radius:28px;background:var(--y);display:flex;align-items:center;justify-content:center;font-size:46px;box-shadow:0 0 80px var(--yglow);animation:spPulse 2s ease-in-out infinite;margin-bottom:20px;}
 @keyframes spPulse{0%,100%{box-shadow:0 0 40px var(--yglow)}50%{box-shadow:0 0 100px rgba(245,197,24,.55)}}
 .splash-logo-text{font-family:'Bebas Neue',sans-serif;font-size:48px;color:var(--y);letter-spacing:3px;margin-bottom:4px}
 .splash-sub{font-size:12px;color:var(--text3);letter-spacing:2px;text-transform:uppercase;margin-bottom:56px}
@@ -66,184 +33,91 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .dot{width:8px;height:8px;border-radius:50%;background:var(--y);animation:db 1.2s ease-in-out infinite}
 .dot:nth-child(2){animation-delay:.15s}.dot:nth-child(3){animation-delay:.3s}
 @keyframes db{0%,80%,100%{transform:scale(.5);opacity:.3}40%{transform:scale(1);opacity:1}}
-
-/* ===== ONBOARDING ===== */
 #s-onboard{overflow-y:auto}
-.onboard-wrap{min-height:100%;display:flex;flex-direction:column;padding:48px 20px 40px;
-  background:radial-gradient(ellipse at 50% 0%,rgba(245,197,24,.07) 0%,transparent 55%),var(--bg)}
+.onboard-wrap{min-height:100%;display:flex;flex-direction:column;padding:48px 20px 40px;background:radial-gradient(ellipse at 50% 0%,rgba(245,197,24,.07) 0%,transparent 55%),var(--bg)}
 .ob-logo{text-align:center;margin-bottom:32px}
 .ob-logo-icon{font-size:40px;margin-bottom:10px}
 .ob-logo h1{font-family:'Bebas Neue',sans-serif;font-size:36px;color:var(--y);letter-spacing:2px}
 .ob-logo p{font-size:13px;color:var(--text2);margin-top:4px}
-
-/* step indicator */
 .step-ind{display:flex;gap:6px;justify-content:center;margin-bottom:28px}
 .step-dot{width:24px;height:4px;border-radius:2px;background:var(--border2);transition:background var(--t)}
 .step-dot.active{background:var(--y)}
-
 .ob-step{display:none}.ob-step.active{display:block}
-
 .slabel{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px}
 .role-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:24px}
-.role-card{
-  padding:20px 14px;border-radius:var(--r);border:2px solid var(--border2);
-  background:var(--card);cursor:pointer;text-align:center;transition:all var(--t);
-}
+.role-card{padding:20px 14px;border-radius:var(--r);border:2px solid var(--border2);background:var(--card);cursor:pointer;text-align:center;transition:all var(--t);}
 .role-card.sel{border-color:var(--y);background:var(--ydim)}
 .role-card-icon{font-size:34px;margin-bottom:8px}
 .role-card-title{font-weight:800;font-size:15px;margin-bottom:3px}
 .role-card-desc{font-size:11px;color:var(--text2);line-height:1.4}
-
 .fgroup{display:flex;flex-direction:column;gap:10px;margin-bottom:20px}
 .frow{display:flex;gap:10px}
 .field{flex:1;position:relative}
 .field label{display:block;font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
-.field input,.field select,.field textarea{
-  width:100%;padding:13px 14px;border-radius:var(--r2);border:1.5px solid var(--border2);background:var(--bg3);
-  color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;outline:none;
-  transition:border-color var(--t);-webkit-appearance:none;appearance:none;
-}
+.field input,.field select,.field textarea{width:100%;padding:13px 14px;border-radius:var(--r2);border:1.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Nunito',sans-serif;font-size:15px;font-weight:600;outline:none;transition:border-color var(--t);-webkit-appearance:none;appearance:none;}
 .field select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23484848' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px}
 .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--y)}
 .field input::placeholder,.field textarea::placeholder{color:var(--text3)}
 .field textarea{resize:none;min-height:70px;line-height:1.5}
-
-.btn{
-  width:100%;padding:16px;border-radius:var(--r);border:none;font-family:'Nunito',sans-serif;
-  font-size:15px;font-weight:800;cursor:pointer;transition:all var(--t);letter-spacing:.3px;
-}
+.btn{width:100%;padding:16px;border-radius:var(--r);border:none;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all var(--t);letter-spacing:.3px;}
 .btn-y{background:var(--y);color:#000}
 .btn-y:active{transform:scale(.97);background:#d4a900}
 .btn-out{background:transparent;color:var(--text);border:1.5px solid var(--border2)}
 .btn-out:active{background:var(--bg3)}
 .btn-sm{padding:10px 18px;font-size:13px;border-radius:var(--r2);width:auto}
 .btn-red{background:var(--red);color:#fff}
-.btn-red:active{background:#c53030}
 .btn-green{background:var(--green);color:#fff}
-.btn-green:active{background:#16a34a}
 .btn-ghost{background:var(--bg4);color:var(--text2);border:none;font-family:'Nunito',sans-serif;font-weight:700}
-.btn-ghost:active{background:var(--bg3)}
 .btn-blue{background:var(--blue);color:#fff}
 .btn:disabled{opacity:.4;pointer-events:none}
-
-/* ===== HEADER ===== */
-.hdr{
-  padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;
-  border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg);
-}
+.hdr{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--bg);}
 .hdr-left h2{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;color:var(--text)}
 .hdr-left span{font-size:11px;color:var(--text3)}
 .badge{padding:4px 11px;border-radius:20px;font-size:11px;font-weight:800;letter-spacing:.5px}
 .badge-p{background:var(--y);color:#000}
 .badge-d{background:var(--blue);color:#fff}
 .badge-ic{background:var(--orange);color:#fff}
-.role-sw{
-  display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;
-  border:1.5px solid var(--border2);background:var(--bg3);cursor:pointer;font-size:11px;
-  font-weight:700;color:var(--text2);transition:all var(--t);
-}
-.role-sw:active{border-color:var(--y);color:var(--y)}
-
-/* ===== SCROLL AREA ===== */
+.role-sw{display:flex;align-items:center;gap:6px;padding:6px 11px;border-radius:20px;border:1.5px solid var(--border2);background:var(--bg3);cursor:pointer;font-size:11px;font-weight:700;color:var(--text2);transition:all var(--t);}
 .scroll{flex:1;overflow-y:auto;padding:14px 18px;padding-bottom:calc(var(--nav) + 14px);-webkit-overflow-scrolling:touch}
 .scroll::-webkit-scrollbar{display:none}
-
-/* ===== BOTTOM NAV ===== */
-.bnav{
-  position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--bg2);
-  border-top:1px solid var(--border);display:flex;align-items:center;padding:0 6px;
-  padding-bottom:env(safe-area-inset-bottom);z-index:100;
-}
-.ni{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:3px;padding:6px 4px;border-radius:var(--r2);cursor:pointer;transition:all var(--t);
-  border:none;background:none;position:relative;
-}
+.bnav{position:fixed;bottom:0;left:0;right:0;height:var(--nav);background:var(--bg2);border-top:1px solid var(--border);display:flex;align-items:center;padding:0 6px;padding-bottom:env(safe-area-inset-bottom);z-index:100;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:6px 4px;border-radius:var(--r2);cursor:pointer;transition:all var(--t);border:none;background:none;position:relative;}
 .ni .ico{font-size:20px;transition:transform var(--t)}
 .ni .lbl{font-size:9px;font-weight:700;color:var(--text3);letter-spacing:.5px;transition:color var(--t)}
 .ni.on .lbl{color:var(--y)}.ni.on .ico{transform:scale(1.1)}
-.nbadge{
-  position:absolute;top:4px;right:calc(50% - 18px);width:15px;height:15px;border-radius:50%;
-  background:var(--red);color:#fff;font-size:9px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;
-}
-
-/* ===== CARDS ===== */
 .card{background:var(--card);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin-bottom:10px}
 .card-b{padding:14px 15px}
-.card-f{padding:0 15px 13px;display:flex;gap:8px}
-
-/* ===== ROUTE BOX ===== */
 .route-box{background:var(--bg3);border-radius:var(--r);border:1px solid var(--border2);overflow:hidden;margin-bottom:10px}
-.route-row{
-  display:flex;align-items:center;padding:0 14px;min-height:52px;cursor:pointer;
-  transition:background var(--t);gap:12px;border:none;background:transparent;width:100%;text-align:left;
-}
-.route-row:active{background:var(--bg4)}
+.route-row{display:flex;align-items:center;padding:0 14px;min-height:52px;cursor:pointer;transition:background var(--t);gap:12px;border:none;background:transparent;width:100%;text-align:left;}
 .rdot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
 .rdot-a{background:var(--y)}.rdot-b{background:var(--green)}
 .rdiv{height:1px;background:var(--border2);margin:0 14px 0 40px}
 .rtext{flex:1;font-size:14px;font-weight:600}
 .rtext-ph{color:var(--text3);font-weight:500}
 .rent{font-size:11px;color:var(--text2);margin-top:1px}
-
-/* ===== CHIPS ===== */
 .chips{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
-.chip{
-  display:flex;align-items:center;gap:5px;padding:8px 13px;border-radius:20px;
-  border:1.5px solid var(--border2);background:var(--card);cursor:pointer;font-size:12px;
-  font-weight:700;transition:all var(--t);white-space:nowrap;
-}
+.chip{display:flex;align-items:center;gap:5px;padding:8px 13px;border-radius:20px;border:1.5px solid var(--border2);background:var(--card);cursor:pointer;font-size:12px;font-weight:700;transition:all var(--t);white-space:nowrap;}
 .chip.on{border-color:var(--y);background:var(--ydim);color:var(--y)}
 .chip-ico{font-size:14px}
-
-/* ===== PRICE INPUT ===== */
-.price-wrap{
-  background:var(--bg3);border-radius:var(--r);border:1.5px solid var(--border2);
-  display:flex;align-items:center;padding:0 16px;gap:8px;margin-bottom:8px;
-  transition:border-color var(--t);
-}
+.price-wrap{background:var(--bg3);border-radius:var(--r);border:1.5px solid var(--border2);display:flex;align-items:center;padding:0 16px;gap:8px;margin-bottom:8px;transition:border-color var(--t);}
 .price-wrap:focus-within{border-color:var(--y)}
 .pcur{font-size:18px;font-weight:800;color:var(--text2)}
-.pinput{
-  flex:1;background:none;border:none;outline:none;font-family:'Bebas Neue',sans-serif;
-  font-size:34px;color:var(--text);padding:14px 0;width:100%;letter-spacing:1px;
-}
+.pinput{flex:1;background:none;border:none;outline:none;font-family:'Bebas Neue',sans-serif;font-size:34px;color:var(--text);padding:14px 0;width:100%;letter-spacing:1px;}
 .pinput::placeholder{color:var(--text3)}
 .phint{font-size:11px;color:var(--text3);margin-bottom:14px;text-align:center}
-
-/* ===== STATUS PILL ===== */
-.spill{
-  display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;
-  font-size:12px;font-weight:700;margin-bottom:14px;
-}
+.spill{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:20px;font-size:12px;font-weight:700;margin-bottom:14px;}
 .sp-search{background:rgba(245,197,24,.1);color:var(--y);border:1px solid rgba(245,197,24,.25)}
 .sp-active{background:rgba(34,197,94,.1);color:var(--green);border:1px solid rgba(34,197,94,.25)}
 .sp-arrived{background:rgba(249,115,22,.1);color:var(--orange);border:1px solid rgba(249,115,22,.25)}
-.sp-done{background:rgba(72,72,72,.2);color:var(--text2);border:1px solid var(--border2)}
 .pdot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.5s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.6)}}
-
-/* ===== ACTIVE ORDER BOX ===== */
-.aob{
-  background:var(--ydim);border:1.5px solid rgba(245,197,24,.25);border-radius:var(--r);
-  padding:14px 15px;margin-bottom:14px;
-}
+.aob{background:var(--ydim);border:1.5px solid rgba(245,197,24,.25);border-radius:var(--r);padding:14px 15px;margin-bottom:14px;}
 .aob-lbl{font-size:10px;font-weight:700;color:var(--y);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px}
 .aob-route{font-size:15px;font-weight:800;margin-bottom:3px}
 .aob-meta{font-size:12px;color:var(--text2)}
-
-/* ===== OFFER CARD ===== */
-.offer-card{
-  background:var(--card);border-radius:var(--r);border:1px solid var(--border2);
-  padding:13px 14px;margin-bottom:9px;animation:slideUp .25s var(--ease);
-}
+.offer-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border2);padding:13px 14px;margin-bottom:9px;animation:slideUp .25s var(--ease);}
 @keyframes slideUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
-.drv-av{
-  width:44px;height:44px;border-radius:50%;background:var(--bg4);
-  display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;
-  border:2px solid var(--border2);
-}
+.drv-av{width:44px;height:44px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;border:2px solid var(--border2);}
 .offer-name{font-weight:800;font-size:15px;margin-bottom:2px}
 .offer-meta{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
 .stars{display:flex;align-items:center;gap:2px;font-size:12px;color:var(--y)}
@@ -251,8 +125,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .offer-price{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--y);letter-spacing:1px}
 .offer-eta{font-size:10px;color:var(--text2);text-align:right;margin-top:1px}
 .offer-acts{display:flex;gap:7px;margin-top:9px}
-
-/* ===== ORDER CARD (driver view) ===== */
 .ord-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border2);overflow:hidden;margin-bottom:10px;animation:slideUp .25s var(--ease)}
 .ord-hdr{padding:11px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--border)}
 .ord-route{padding:13px 14px}
@@ -265,33 +137,19 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .tag-y{background:var(--ydim);color:var(--y);border-color:rgba(245,197,24,.25)}
 .tag-g{background:rgba(34,197,94,.1);color:var(--green);border-color:rgba(34,197,94,.2)}
 .ord-bot{padding:12px 14px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-
-/* ===== PROFILE ===== */
 .prof-hero{display:flex;flex-direction:column;align-items:center;padding:28px 20px 18px;text-align:center}
-.prof-av{
-  width:72px;height:72px;border-radius:50%;background:var(--bg4);
-  display:flex;align-items:center;justify-content:center;font-size:32px;
-  border:3px solid var(--y);margin-bottom:12px;
-}
+.prof-av{width:72px;height:72px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:32px;border:3px solid var(--y);margin-bottom:12px;}
 .prof-name{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:2px}
 .prof-sub{font-size:13px;color:var(--text2)}
 .stats{display:flex;gap:10px;margin-bottom:14px}
 .stat{flex:1;background:var(--card);border-radius:var(--r2);border:1px solid var(--border);padding:13px;text-align:center}
 .stat-val{font-family:'Bebas Neue',sans-serif;font-size:26px;color:var(--y);letter-spacing:1px}
 .stat-lbl{font-size:10px;color:var(--text3);margin-top:1px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-
 .mlist{display:flex;flex-direction:column;gap:2px}
-.mi{
-  display:flex;align-items:center;gap:13px;padding:14px 15px;background:var(--card);
-  border-radius:var(--r2);cursor:pointer;transition:background var(--t);border:none;width:100%;text-align:left;
-}
-.mi:active{background:var(--bg4)}
+.mi{display:flex;align-items:center;gap:13px;padding:14px 15px;background:var(--card);border-radius:var(--r2);cursor:pointer;transition:background var(--t);border:none;width:100%;text-align:left;}
 .mi-ico{font-size:19px;width:26px;text-align:center;flex-shrink:0}
 .mi-txt{flex:1;font-size:14px;font-weight:600}
 .mi-arr{color:var(--text3);font-size:13px}
-.mi-badge{padding:2px 7px;border-radius:7px;font-size:10px;font-weight:800;background:var(--red);color:#fff}
-
-/* ===== HISTORY ===== */
 .hist-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border2);padding:13px 14px;margin-bottom:8px}
 .hist-hdr{display:flex;justify-content:space-between;margin-bottom:8px;align-items:flex-start}
 .hist-date{font-size:11px;color:var(--text3)}
@@ -300,52 +158,22 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .hist-b{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:800;margin-top:7px}
 .hb-ok{background:rgba(34,197,94,.1);color:var(--green)}
 .hb-cx{background:rgba(239,68,68,.1);color:var(--red)}
-
-/* ===== MODAL ===== */
-.mo{
-  position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;
-  z-index:200;opacity:0;pointer-events:none;transition:opacity var(--t) var(--ease);
-  backdrop-filter:blur(4px);
-}
+.mo{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:flex-end;z-index:200;opacity:0;pointer-events:none;transition:opacity var(--t) var(--ease);backdrop-filter:blur(4px);}
 .mo.open{opacity:1;pointer-events:all}
-.ms{
-  width:100%;background:var(--bg2);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);
-  padding:0 20px 40px;transform:translateY(100%);transition:transform .3s var(--ease);
-  max-height:90vh;overflow-y:auto;
-}
+.ms{width:100%;background:var(--bg2);border-radius:22px 22px 0 0;border-top:1px solid var(--border2);padding:0 20px 40px;transform:translateY(100%);transition:transform .3s var(--ease);max-height:90vh;overflow-y:auto;}
 .mo.open .ms{transform:none}
 .mhandle{width:34px;height:4px;border-radius:2px;background:var(--border2);margin:12px auto 18px}
 .mtitle{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:16px}
-
-/* ===== TOAST ===== */
-.toast{
-  position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);
-  background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);
-  padding:11px 18px;font-size:13px;font-weight:700;z-index:400;transition:transform .3s var(--ease);
-  white-space:nowrap;max-width:88vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);
-}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%) translateY(-80px);background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:11px 18px;font-size:13px;font-weight:700;z-index:400;transition:transform .3s var(--ease);white-space:nowrap;max-width:88vw;text-align:center;box-shadow:0 8px 32px rgba(0,0,0,.6);}
 .toast.show{transform:translateX(-50%) translateY(0)}
 .toast.ok{border-color:rgba(34,197,94,.4)}
 .toast.err{border-color:rgba(239,68,68,.4)}
 .toast.warn{border-color:rgba(245,197,24,.4)}
-
-/* ===== RATING ===== */
 .srow{display:flex;gap:8px;justify-content:center;margin:14px 0}
 .sbtn{font-size:34px;border:none;background:none;cursor:pointer;transition:transform .15s;filter:grayscale(1);opacity:.35}
 .sbtn.lit{filter:none;opacity:1}
-.sbtn:active{transform:scale(1.2)}
-
-/* ===== DRIVER STATUS BAR ===== */
-.drv-online{
-  background:rgba(34,197,94,.08);border:1.5px solid rgba(34,197,94,.2);border-radius:var(--r);
-  padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;
-}
-.drv-offline{
-  background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);
-  padding:12px 14px;margin-bottom:12px;
-}
-
-/* ===== SUPPORT CHAT ===== */
+.drv-online{background:rgba(34,197,94,.08);border:1.5px solid rgba(34,197,94,.2);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;}
+.drv-offline{background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r);padding:12px 14px;margin-bottom:12px;}
 .chat-wrap{display:flex;flex-direction:column;height:100%}
 .chat-msgs{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
 .chat-msgs::-webkit-scrollbar{display:none}
@@ -353,151 +181,82 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .msg-in{background:var(--bg3);border:1px solid var(--border2);align-self:flex-start;border-bottom-left-radius:4px}
 .msg-out{background:var(--y);color:#000;align-self:flex-end;border-bottom-right-radius:4px}
 .msg-time{font-size:9px;opacity:.5;margin-top:3px}
-.chat-input-row{
-  display:flex;gap:8px;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom));
-  border-top:1px solid var(--border);background:var(--bg2);
-}
-.chat-input{
-  flex:1;background:var(--bg3);border:1.5px solid var(--border2);border-radius:22px;
-  padding:10px 16px;color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;
-  outline:none;transition:border-color var(--t);
-}
+.chat-input-row{display:flex;gap:8px;padding:10px 14px;padding-bottom:calc(10px + env(safe-area-inset-bottom));border-top:1px solid var(--border);background:var(--bg2);}
+.chat-input{flex:1;background:var(--bg3);border:1.5px solid var(--border2);border-radius:22px;padding:10px 16px;color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;outline:none;transition:border-color var(--t);}
 .chat-input:focus{border-color:var(--y)}
-.chat-send{
-  width:42px;height:42px;border-radius:50%;background:var(--y);border:none;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;
-}
-.chat-send:active{background:#d4a900}
-
-/* ===== ARRIVAL ALERT ===== */
-.arrival-alert{
-  background:var(--ydim);border:2px solid var(--y);border-radius:var(--r);
-  padding:16px;margin-bottom:12px;text-align:center;animation:alertPulse 2s ease-in-out infinite;
-}
+.chat-send{width:42px;height:42px;border-radius:50%;background:var(--y);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;}
+.arrival-alert{background:var(--ydim);border:2px solid var(--y);border-radius:var(--r);padding:16px;margin-bottom:12px;text-align:center;animation:alertPulse 2s ease-in-out infinite;}
 @keyframes alertPulse{0%,100%{border-color:var(--y)}50%{border-color:var(--y2);box-shadow:0 0 20px var(--yglow)}}
-
-/* ===== TON PAYMENT ===== */
-.ton-card{
-  background:linear-gradient(135deg,#0088cc 0%,#005fa3 100%);border-radius:var(--r);
-  padding:16px;margin-bottom:12px;color:#fff;
-}
+.ton-card{background:linear-gradient(135deg,#0088cc 0%,#005fa3 100%);border-radius:var(--r);padding:16px;margin-bottom:12px;color:#fff;}
 .ton-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;margin-bottom:4px}
 .ton-desc{font-size:12px;opacity:.8;margin-bottom:12px;line-height:1.5}
-
-/* ===== INTERCITY ===== */
 .date-scroll{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;margin-bottom:12px}
 .date-scroll::-webkit-scrollbar{display:none}
-.date-chip{
-  flex-shrink:0;padding:9px 16px;border-radius:20px;border:1.5px solid var(--border2);
-  background:var(--card);cursor:pointer;text-align:center;transition:all var(--t);
-}
+.date-chip{flex-shrink:0;padding:9px 16px;border-radius:20px;border:1.5px solid var(--border2);background:var(--card);cursor:pointer;text-align:center;transition:all var(--t);}
 .date-chip.on{border-color:var(--y);background:var(--ydim)}
 .date-chip .dc-day{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase}
 .date-chip .dc-num{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:.5px}
 .date-chip.on .dc-day,.date-chip.on .dc-num{color:var(--y)}
-
-.time-wheel{
-  background:var(--bg3);border-radius:var(--r2);border:1.5px solid var(--border2);
-  overflow:hidden;height:140px;position:relative;margin-bottom:12px;
-}
-.tw-inner{
-  overflow-y:scroll;height:100%;scroll-snap-type:y mandatory;
-  -webkit-overflow-scrolling:touch;
-}
+.time-wheel{background:var(--bg3);border-radius:var(--r2);border:1.5px solid var(--border2);overflow:hidden;height:140px;position:relative;margin-bottom:12px;}
+.tw-inner{overflow-y:scroll;height:100%;scroll-snap-type:y mandatory;-webkit-overflow-scrolling:touch;}
 .tw-inner::-webkit-scrollbar{display:none}
-.tw-item{
-  height:46px;display:flex;align-items:center;justify-content:center;
-  font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;
-  scroll-snap-align:center;color:var(--text3);cursor:pointer;transition:color var(--t);
-}
+.tw-item{height:46px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;scroll-snap-align:center;color:var(--text3);cursor:pointer;transition:color var(--t);}
 .tw-item.sel{color:var(--y);font-size:26px}
 .tw-overlay-top{position:absolute;top:0;left:0;right:0;height:47px;background:linear-gradient(to bottom,var(--bg3),transparent);pointer-events:none}
 .tw-overlay-bot{position:absolute;bottom:0;left:0;right:0;height:47px;background:linear-gradient(to top,var(--bg3),transparent);pointer-events:none}
 .tw-line{position:absolute;top:47px;left:0;right:0;height:1px;background:var(--y);opacity:.3}
 .tw-line2{position:absolute;top:93px;left:0;right:0;height:1px;background:var(--y);opacity:.3}
-
 .ic-type-row{display:flex;gap:8px;margin-bottom:12px}
-.ic-type{
-  flex:1;padding:11px 8px;border-radius:var(--r2);border:1.5px solid var(--border2);
-  background:var(--card);cursor:pointer;text-align:center;font-size:12px;font-weight:700;
-  transition:all var(--t);
-}
+.ic-type{flex:1;padding:11px 8px;border-radius:var(--r2);border:1.5px solid var(--border2);background:var(--card);cursor:pointer;text-align:center;font-size:12px;font-weight:700;transition:all var(--t);}
 .ic-type.on{border-color:var(--y);background:var(--ydim);color:var(--y)}
-
-/* ===== DRIVER SHIFT INFO ===== */
-.shift-info{
-  background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);
-  padding:13px 14px;margin-bottom:10px;
-}
+.shift-info{background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r);padding:13px 14px;margin-bottom:10px;}
 .shift-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
 .shift-row:last-child{margin-bottom:0}
 .shift-lbl{font-size:11px;color:var(--text3);font-weight:700}
 .shift-val{font-size:13px;font-weight:800}
-
-/* ===== ONLINE COUNTER ===== */
-.online-bar{
-  display:flex;gap:8px;margin-bottom:12px;
-}
-.oc{
-  flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);
-  padding:10px 13px;display:flex;align-items:center;gap:9px;
-}
+.online-bar{display:flex;gap:8px;margin-bottom:12px;}
+.oc{flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:var(--r2);padding:10px 13px;display:flex;align-items:center;gap:9px;}
 .oc-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
 .oc-dot-g{background:var(--green)}
 .oc-dot-y{background:var(--y)}
 .oc-info{flex:1}
 .oc-num{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:.5px}
 .oc-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-
-/* ===== SECTION TITLE ===== */
 .stitle{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:.5px;color:var(--text2);margin-bottom:10px}
-.divider{height:1px;background:var(--border);margin:14px 0}
 .empty-st{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:48px 20px;text-align:center;gap:10px}
 .empty-ico{font-size:44px;opacity:.25}
 .empty-txt{color:var(--text2);font-size:13px;font-weight:600}
-
-/* ===== DRIVER NOT APPROVED ===== */
-.pending-box{
-  background:rgba(249,115,22,.08);border:1.5px solid rgba(249,115,22,.25);border-radius:var(--r);
-  padding:18px;text-align:center;margin:20px 0;
-}
+.pending-box{background:rgba(249,115,22,.08);border:1.5px solid rgba(249,115,22,.25);border-radius:var(--r);padding:18px;text-align:center;margin:20px 0;}
 .pending-ico{font-size:40px;margin-bottom:12px}
 .pending-title{font-weight:800;font-size:16px;margin-bottom:6px;color:var(--orange)}
 .pending-desc{font-size:13px;color:var(--text2);line-height:1.5}
-
-/* geo toggle */
-.geo-row{
-  display:flex;align-items:center;justify-content:space-between;
-  background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r2);
-  padding:11px 14px;margin-bottom:10px;
-}
+.geo-row{display:flex;align-items:center;justify-content:space-between;background:var(--bg3);border:1.5px solid var(--border2);border-radius:var(--r2);padding:11px 14px;margin-bottom:10px;}
 .geo-lbl{font-size:13px;font-weight:700}
 .geo-sub{font-size:11px;color:var(--text2);margin-top:1px}
-.toggle{
-  width:44px;height:24px;border-radius:12px;background:var(--border2);position:relative;
-  cursor:pointer;transition:background var(--t);flex-shrink:0;
-}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border2);position:relative;cursor:pointer;transition:background var(--t);flex-shrink:0;}
 .toggle.on{background:var(--y)}
-.toggle::after{
-  content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;
-  background:#fff;transition:transform var(--t);
-}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform var(--t);}
 .toggle.on::after{transform:translateX(20px)}
+/* Loading overlay */
+.loading-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:500;display:none;}
+.loading-overlay.show{display:flex}
+.loading-spinner{width:40px;height:40px;border:3px solid var(--border2);border-top-color:var(--y);border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<!-- ===== SPLASH ===== -->
+<div class="loading-overlay" id="loading-overlay"><div class="loading-spinner"></div></div>
+
+<!-- SPLASH -->
 <div class="screen active" id="s-splash">
   <div class="splash-icon">🚖</div>
   <div class="splash-logo-text">TAXI</div>
   <div class="splash-sub">Telegram Mini App</div>
-  <div class="loader-dots">
-    <div class="dot"></div><div class="dot"></div><div class="dot"></div>
-  </div>
+  <div class="loader-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>
 </div>
 
-<!-- ===== ONBOARDING ===== -->
+<!-- ONBOARDING -->
 <div class="screen" id="s-onboard">
   <div class="onboard-wrap">
     <div class="ob-logo">
@@ -510,11 +269,10 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       <div class="step-dot" id="sd2"></div>
       <div class="step-dot" id="sd3"></div>
     </div>
-
     <!-- Step 1: Role -->
     <div class="ob-step active" id="ob-step-1">
       <div class="slabel">Выберите роль</div>
-      <div class="role-grid" id="role-cards">
+      <div class="role-grid">
         <div class="role-card" data-role="passenger" onclick="selRole('passenger')">
           <div class="role-card-icon">🧳</div>
           <div class="role-card-title">Пассажир</div>
@@ -528,7 +286,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       </div>
       <button class="btn btn-y" onclick="obNext(1)">Далее →</button>
     </div>
-
     <!-- Step 2: Personal data -->
     <div class="ob-step" id="ob-step-2">
       <div class="slabel">Личные данные</div>
@@ -536,7 +293,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         <div class="frow">
           <div class="field">
             <label>Имя</label>
-            <input type="text" id="reg-name" placeholder="Ваше имя" autocomplete="given-name">
+            <input type="text" id="reg-name" placeholder="Ваше имя">
           </div>
           <div class="field">
             <label>Дата рождения</label>
@@ -561,9 +318,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
           </div>
           <div class="field">
             <label>Город</label>
-            <select id="reg-city">
-              <option value="">Сначала страну</option>
-            </select>
+            <select id="reg-city"><option value="">Сначала страну</option></select>
           </div>
         </div>
       </div>
@@ -572,201 +327,112 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         <button class="btn btn-y" onclick="obNext(2)" style="flex:1">Далее →</button>
       </div>
     </div>
-
-    <!-- Step 3: Driver car data (or finish for passenger) -->
+    <!-- Step 3 -->
     <div class="ob-step" id="ob-step-3">
       <div id="ob-driver-block" style="display:none">
         <div class="slabel">Данные автомобиля</div>
         <div class="fgroup">
           <div class="frow">
-            <div class="field">
-              <label>Марка</label>
-              <input type="text" id="reg-car-brand" placeholder="Toyota, Lada...">
-            </div>
-            <div class="field">
-              <label>Год выпуска</label>
-              <input type="number" id="reg-car-year" placeholder="2020" min="1990" max="2025">
-            </div>
+            <div class="field"><label>Марка</label><input type="text" id="reg-car-brand" placeholder="Toyota, Lada..."></div>
+            <div class="field"><label>Год выпуска</label><input type="number" id="reg-car-year" placeholder="2020" min="1990" max="2026"></div>
           </div>
           <div class="frow">
-            <div class="field">
-              <label>Гос. номер</label>
-              <input type="text" id="reg-car-num" placeholder="A123BC" style="text-transform:uppercase">
-            </div>
-            <div class="field">
-              <label>Цвет</label>
-              <input type="text" id="reg-car-color" placeholder="Белый">
-            </div>
+            <div class="field"><label>Гос. номер</label><input type="text" id="reg-car-num" placeholder="A123BC" style="text-transform:uppercase"></div>
+            <div class="field"><label>Цвет</label><input type="text" id="reg-car-color" placeholder="Белый"></div>
           </div>
         </div>
-        <div class="pending-box" style="margin-top:0;margin-bottom:14px">
-          <div style="font-size:13px;color:var(--text2);line-height:1.5">
-            ⚠️ После регистрации ваши данные отправятся администратору для проверки. 
-            Первый месяц — бесплатно. Затем 500₸/день через TON.
-          </div>
+        <div class="pending-box" style="margin:0 0 14px">
+          <div style="font-size:13px;color:var(--text2);line-height:1.5">⚠️ После регистрации данные отправятся администратору. Первый месяц — бесплатно.</div>
         </div>
       </div>
       <div id="ob-passenger-block">
         <div class="pending-box" style="background:var(--ydim);border-color:rgba(245,197,24,.3)">
-          <div style="font-size:13px;line-height:1.5;color:var(--text)">
-            ✅ Всё готово! Вы можете сразу начать заказывать поездки.
-          </div>
+          <div style="font-size:13px;line-height:1.5;color:var(--text)">✅ Всё готово! Вы можете сразу начать заказывать поездки.</div>
         </div>
       </div>
-      <div style="display:flex;gap:8px">
+      <div style="display:flex;gap:8px;margin-top:16px">
         <button class="btn btn-out" onclick="obBack(3)" style="flex:.4">← Назад</button>
-        <button class="btn btn-y" onclick="finishReg()" style="flex:1">Начать 🚀</button>
+        <button class="btn btn-y" id="btn-finish-reg" onclick="finishReg()" style="flex:1">Начать 🚀</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- ===== PASSENGER SCREEN ===== -->
+<!-- PASSENGER SCREEN -->
 <div class="screen" id="s-passenger">
   <div class="hdr">
-    <div class="hdr-left">
-      <span style="font-size:11px;color:var(--text3)">Привет,</span>
-      <h2 id="p-hdr-name">Пассажир</h2>
-    </div>
+    <div class="hdr-left"><span style="font-size:11px;color:var(--text3)">Привет,</span><h2 id="p-hdr-name">Пассажир</h2></div>
     <div style="display:flex;align-items:center;gap:8px">
       <span class="badge badge-p">Пассажир</span>
       <button class="role-sw" onclick="switchRole()">⇄</button>
     </div>
   </div>
-  <div class="scroll" id="p-scroll">
-
-    <!-- NEW ORDER section -->
+  <div class="scroll">
     <div id="p-new-order">
       <div class="online-bar">
-        <div class="oc">
-          <div class="oc-dot oc-dot-g"></div>
-          <div class="oc-info">
-            <div class="oc-num" id="oc-total">0</div>
-            <div class="oc-lbl">На линии</div>
-          </div>
-        </div>
-        <div class="oc">
-          <div class="oc-dot oc-dot-y"></div>
-          <div class="oc-info">
-            <div class="oc-num" id="oc-free">0</div>
-            <div class="oc-lbl">Свободны</div>
-          </div>
-        </div>
+        <div class="oc"><div class="oc-dot oc-dot-g"></div><div class="oc-info"><div class="oc-num" id="oc-total">0</div><div class="oc-lbl">На линии</div></div></div>
+        <div class="oc"><div class="oc-dot oc-dot-y"></div><div class="oc-info"><div class="oc-num" id="oc-free">0</div><div class="oc-lbl">Свободны</div></div></div>
       </div>
-
       <div class="stitle">Новая поездка</div>
       <div class="route-box">
         <button class="route-row" onclick="openAddrModal('from')">
           <div class="rdot rdot-a"></div>
-          <div style="flex:1">
-            <div class="rtext" id="p-from-txt"><span class="rtext-ph">Откуда едем?</span></div>
-            <div class="rent" id="p-from-ent"></div>
-          </div>
+          <div style="flex:1"><div class="rtext" id="p-from-txt"><span class="rtext-ph">Откуда едем?</span></div><div class="rent" id="p-from-ent"></div></div>
           <span style="color:var(--text3);font-size:18px">›</span>
         </button>
         <div class="rdiv"></div>
         <button class="route-row" onclick="openAddrModal('to')">
           <div class="rdot rdot-b"></div>
-          <div style="flex:1">
-            <div class="rtext" id="p-to-txt"><span class="rtext-ph">Куда едем?</span></div>
-            <div class="rent" id="p-to-ent"></div>
-          </div>
+          <div style="flex:1"><div class="rtext" id="p-to-txt"><span class="rtext-ph">Куда едем?</span></div><div class="rent" id="p-to-ent"></div></div>
           <span style="color:var(--text3);font-size:18px">›</span>
         </button>
       </div>
-
       <div class="chips">
-        <div class="chip" id="chip-pax" onclick="openModal('mo-pax')">
-          <span class="chip-ico">👤</span>
-          <span id="chip-pax-lbl">1 пасс.</span>
-        </div>
-        <div class="chip" id="chip-child" onclick="toggleChip('child')">
-          <span class="chip-ico">👶</span>
-          <span>Детское кресло</span>
-        </div>
-        <div class="chip" id="chip-pay" onclick="openModal('mo-pay')">
-          <span class="chip-ico">💵</span>
-          <span id="chip-pay-lbl">Наличные</span>
-        </div>
+        <div class="chip" onclick="openModal('mo-pax')"><span class="chip-ico">👤</span><span id="chip-pax-lbl">1 пасс.</span></div>
+        <div class="chip" id="chip-child" onclick="toggleChip('child')"><span class="chip-ico">👶</span><span>Детское кресло</span></div>
+        <div class="chip" onclick="openModal('mo-pay')"><span class="chip-ico">💵</span><span id="chip-pay-lbl">Наличные</span></div>
+        <div class="chip" onclick="openIntercity()"><span class="chip-ico">🛣️</span><span>Межгород</span></div>
       </div>
-
-      <!-- Geo toggle -->
       <div class="geo-row">
-        <div>
-          <div class="geo-lbl">📍 Транслировать геолокацию</div>
-          <div class="geo-sub">Водитель увидит где вы находитесь</div>
-        </div>
+        <div><div class="geo-lbl">📍 Транслировать геолокацию</div><div class="geo-sub">Водитель увидит где вы находитесь</div></div>
         <div class="toggle" id="geo-toggle" onclick="toggleGeo()"></div>
       </div>
-
       <div class="slabel" style="margin-top:4px">Предложите цену</div>
-      <div class="price-wrap">
-        <span class="pcur">₸</span>
-        <input class="pinput" type="number" id="p-price" placeholder="0" min="0">
-      </div>
+      <div class="price-wrap"><span class="pcur">₸</span><input class="pinput" type="number" id="p-price" placeholder="0" min="0"></div>
       <div class="phint">Водители увидят вашу цену и смогут предложить свою</div>
-
-      <div class="field" style="margin-bottom:14px">
-        <textarea class="field" id="p-comment" placeholder="Комментарий (необязательно)"></textarea>
-      </div>
-
+      <div class="field" style="margin-bottom:14px"><textarea id="p-comment" placeholder="Комментарий (необязательно)" style="width:100%;padding:13px 14px;border-radius:var(--r2);border:1.5px solid var(--border2);background:var(--bg3);color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;outline:none;resize:none;min-height:70px;line-height:1.5;-webkit-appearance:none;"></textarea></div>
       <button class="btn btn-y" onclick="createOrder()" id="btn-create-order">🚖 Создать заказ</button>
     </div>
-
-    <!-- SEARCHING section -->
     <div id="p-searching" style="display:none">
-      <div class="spill sp-search"><div class="pdot"></div><span id="p-status-txt">Поиск водителя...</span></div>
-      <div class="aob">
-        <div class="aob-lbl">Ваш заказ</div>
-        <div class="aob-route" id="p-aob-route">—</div>
-        <div class="aob-meta" id="p-aob-meta">—</div>
-      </div>
+      <div class="spill sp-search"><div class="pdot"></div><span>Поиск водителя...</span></div>
+      <div class="aob"><div class="aob-lbl">Ваш заказ</div><div class="aob-route" id="p-aob-route">—</div><div class="aob-meta" id="p-aob-meta">—</div></div>
       <div id="p-offers-title" style="display:none"><div class="stitle">Предложения водителей</div></div>
       <div id="p-offers-list"></div>
       <button class="btn btn-out" onclick="cancelOrder()" style="margin-top:8px">Отменить заказ</button>
     </div>
-
-    <!-- ACTIVE RIDE section -->
     <div id="p-active-ride" style="display:none">
       <div class="spill sp-active" id="p-ride-spill"><div class="pdot"></div><span id="p-ride-status">Водитель едет к вам</span></div>
-      <!-- Arrival alert -->
       <div class="arrival-alert" id="p-arrival-alert" style="display:none">
         <div style="font-size:28px;margin-bottom:6px">🚗</div>
         <div style="font-weight:800;font-size:16px;margin-bottom:4px">Водитель прибыл!</div>
         <div style="font-size:12px;color:var(--text2);margin-bottom:12px">Подтвердите выход</div>
         <button class="btn btn-y" onclick="passengerBoarded()" style="max-width:200px;margin:0 auto;display:block">Выхожу 🚶</button>
       </div>
-      <div class="aob">
-        <div class="aob-lbl">Текущая поездка</div>
-        <div class="aob-route" id="p-ride-route">—</div>
-        <div class="aob-meta" id="p-ride-meta">—</div>
-      </div>
-      <div class="card">
-        <div class="card-b">
-          <div style="display:flex;align-items:center;gap:12px">
-            <div class="drv-av" id="p-ride-drv-av">🧑‍✈️</div>
-            <div style="flex:1">
-              <div style="font-weight:800;font-size:15px" id="p-ride-drv-name">—</div>
-              <div style="font-size:12px;color:var(--text2)" id="p-ride-drv-car">—</div>
-              <div class="stars">⭐ <span id="p-ride-drv-rating">—</span></div>
-            </div>
-            <div style="text-align:right">
-              <div class="offer-price" id="p-ride-price">—</div>
-              <div class="offer-eta" id="p-ride-eta">—</div>
-            </div>
+      <div class="aob"><div class="aob-lbl">Текущая поездка</div><div class="aob-route" id="p-ride-route">—</div><div class="aob-meta" id="p-ride-meta">—</div></div>
+      <div class="card"><div class="card-b">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div class="drv-av" id="p-ride-drv-av">🧑‍✈️</div>
+          <div style="flex:1">
+            <div style="font-weight:800;font-size:15px" id="p-ride-drv-name">—</div>
+            <div style="font-size:12px;color:var(--text2)" id="p-ride-drv-car">—</div>
+            <div class="stars">⭐ <span id="p-ride-drv-rating">—</span></div>
           </div>
+          <div style="text-align:right"><div class="offer-price" id="p-ride-price">—</div><div class="offer-eta" id="p-ride-eta">—</div></div>
         </div>
-      </div>
+      </div></div>
       <button class="btn btn-out" style="margin-top:8px;border-color:rgba(239,68,68,.4);color:var(--red)" onclick="passengerCancelRide()">Отменить поездку</button>
     </div>
-
-    <!-- PASSENGER HISTORY TAB content -->
-    <div id="p-hist-content" style="display:none">
-      <div class="stitle">История поездок</div>
-      <div id="p-hist-list"></div>
-    </div>
-
-    <!-- PASSENGER PROFILE TAB content -->
+    <div id="p-hist-content" style="display:none"><div class="stitle">История поездок</div><div id="p-hist-list"></div></div>
     <div id="p-prof-content" style="display:none">
       <div class="prof-hero">
         <div class="prof-av">🧳</div>
@@ -785,41 +451,28 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
       </div>
     </div>
   </div>
-  <div class="bnav" id="p-bnav">
+  <div class="bnav">
     <button class="ni on" id="p-ni-0" onclick="pTab(0)"><span class="ico">🚖</span><span class="lbl">ЗАКАЗ</span></button>
     <button class="ni" id="p-ni-1" onclick="pTab(1)"><span class="ico">📋</span><span class="lbl">ПОЕЗДКИ</span></button>
     <button class="ni" id="p-ni-2" onclick="pTab(2)"><span class="ico">👤</span><span class="lbl">ПРОФИЛЬ</span></button>
   </div>
 </div>
 
-<!-- ===== DRIVER SCREEN ===== -->
+<!-- DRIVER SCREEN -->
 <div class="screen" id="s-driver">
   <div class="hdr">
-    <div class="hdr-left">
-      <span style="font-size:11px;color:var(--text3)">Привет,</span>
-      <h2 id="d-hdr-name">Водитель</h2>
-    </div>
+    <div class="hdr-left"><span style="font-size:11px;color:var(--text3)">Привет,</span><h2 id="d-hdr-name">Водитель</h2></div>
     <div style="display:flex;align-items:center;gap:8px">
-      <span class="badge badge-d" id="d-badge">Водитель</span>
+      <span class="badge badge-d">Водитель</span>
       <button class="role-sw" onclick="switchRole()">⇄</button>
     </div>
   </div>
-  <div class="scroll" id="d-scroll">
-
-    <!-- ORDERS TAB -->
+  <div class="scroll">
     <div id="d-orders-tab">
-      <!-- not approved -->
       <div id="d-pending-box" style="display:none">
-        <div class="pending-box">
-          <div class="pending-ico">⏳</div>
-          <div class="pending-title">Аккаунт на проверке</div>
-          <div class="pending-desc">Администратор проверит ваши данные и активирует аккаунт. Обычно это занимает до 24 часов.</div>
-        </div>
+        <div class="pending-box"><div class="pending-ico">⏳</div><div class="pending-title">Аккаунт на проверке</div><div class="pending-desc">Администратор проверит ваши данные и активирует аккаунт. Обычно до 24 часов.</div></div>
       </div>
-
-      <!-- approved driver -->
       <div id="d-approved-box">
-        <!-- shift control -->
         <div id="d-offline-box">
           <div class="drv-offline">
             <div style="font-weight:800;margin-bottom:4px">Вы не на линии</div>
@@ -828,68 +481,44 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
               <div style="font-size:12px;color:var(--orange);font-weight:700">💰 Требуется оплата</div>
               <div style="font-size:11px;color:var(--text2);margin-top:3px">Бесплатный месяц истёк. Стоимость смены: 500₸/день через TON</div>
             </div>
-            <div id="d-mode-row" style="display:flex;gap:8px;margin-bottom:10px">
+            <div style="display:flex;gap:8px;margin-bottom:10px">
               <div class="ic-type on" id="d-mode-city" onclick="selDrvMode('city')">🏙️ Город</div>
               <div class="ic-type" id="d-mode-ic" onclick="selDrvMode('intercity')">🛣️ Межгород</div>
             </div>
-            <button class="btn btn-y" onclick="goOnline()" id="btn-go-online">Выйти на линию 🟢</button>
+            <button class="btn btn-y" onclick="goOnline()">Выйти на линию 🟢</button>
           </div>
         </div>
-
         <div id="d-online-box" style="display:none">
           <div class="drv-online">
-            <div>
-              <div style="font-weight:800;color:var(--green)">🟢 Вы на линии</div>
-              <div style="font-size:12px;color:var(--text2)" id="d-shift-until">—</div>
-            </div>
+            <div><div style="font-weight:800;color:var(--green)">🟢 Вы на линии</div><div style="font-size:12px;color:var(--text2)" id="d-shift-until">—</div></div>
             <button class="btn btn-out btn-sm" onclick="goOffline()">Завершить</button>
           </div>
           <div class="shift-info">
-            <div class="shift-row">
-              <span class="shift-lbl">Поездок за смену</span>
-              <span class="shift-val" id="d-shift-trips">0</span>
-            </div>
-            <div class="shift-row">
-              <span class="shift-lbl">Среднее за смену</span>
-              <span class="shift-val" id="d-avg-trips">—</span>
-            </div>
-            <div class="shift-row" id="d-bonus-row" style="display:none">
-              <span class="shift-lbl">До бесплатной смены</span>
-              <span class="shift-val" id="d-bonus-left" style="color:var(--y)">30</span>
-            </div>
+            <div class="shift-row"><span class="shift-lbl">Поездок за смену</span><span class="shift-val" id="d-shift-trips">0</span></div>
+            <div class="shift-row"><span class="shift-lbl">Среднее за смену</span><span class="shift-val" id="d-avg-trips">—</span></div>
+            <div class="shift-row" id="d-bonus-row" style="display:none"><span class="shift-lbl">До бесплатной смены</span><span class="shift-val" id="d-bonus-left" style="color:var(--y)">30</span></div>
           </div>
           <div class="stitle">Доступные заказы</div>
-          <div id="d-orders-list">
-            <div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">Нет заказов. Обновляется автоматически.</div></div>
-          </div>
+          <div id="d-orders-list"><div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">Нет заказов. Обновляется автоматически.</div></div></div>
         </div>
-
-        <!-- Active order -->
         <div id="d-active-order" style="display:none">
           <div class="spill sp-active"><div class="pdot"></div><span>Активный заказ</span></div>
-          <div class="aob">
-            <div class="aob-lbl">Текущий заказ</div>
-            <div class="aob-route" id="d-act-route">—</div>
-            <div class="aob-meta" id="d-act-meta">—</div>
-          </div>
-          <div class="card">
-            <div class="card-b">
-              <div style="display:flex;align-items:center;gap:12px">
-                <div class="drv-av">🧳</div>
-                <div style="flex:1">
-                  <div style="font-weight:800;font-size:15px" id="d-act-pname">—</div>
-                  <div style="font-size:12px;color:var(--text2)" id="d-act-pphone">—</div>
-                  <div class="stars">⭐ <span id="d-act-prating">—</span></div>
-                </div>
-                <div class="offer-price" id="d-act-price">—</div>
+          <div class="aob"><div class="aob-lbl">Текущий заказ</div><div class="aob-route" id="d-act-route">—</div><div class="aob-meta" id="d-act-meta">—</div></div>
+          <div class="card"><div class="card-b">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div class="drv-av">🧳</div>
+              <div style="flex:1">
+                <div style="font-weight:800;font-size:15px" id="d-act-pname">—</div>
+                <div style="font-size:12px;color:var(--text2)" id="d-act-pphone">—</div>
+                <div class="stars">⭐ <span id="d-act-prating">—</span></div>
               </div>
-              <!-- Geo indicator -->
-              <div id="d-geo-indicator" style="display:none;margin-top:8px;padding:7px 10px;background:rgba(245,197,24,.08);border-radius:var(--r2);border:1px solid rgba(245,197,24,.2)">
-                <div style="font-size:11px;color:var(--y);font-weight:700">📍 Пассажир транслирует геолокацию</div>
-                <div style="font-size:11px;color:var(--text2);margin-top:1px" id="d-geo-coords">Ожидание данных...</div>
-              </div>
+              <div class="offer-price" id="d-act-price">—</div>
             </div>
-          </div>
+            <div id="d-geo-indicator" style="display:none;margin-top:8px;padding:7px 10px;background:rgba(245,197,24,.08);border-radius:var(--r2);border:1px solid rgba(245,197,24,.2)">
+              <div style="font-size:11px;color:var(--y);font-weight:700">📍 Пассажир транслирует геолокацию</div>
+              <div style="font-size:11px;color:var(--text2);margin-top:1px" id="d-geo-coords">Ожидание данных...</div>
+            </div>
+          </div></div>
           <div style="display:flex;gap:8px;margin-bottom:8px">
             <button class="btn btn-y" style="flex:1" onclick="driverArrived()" id="btn-arrived">Я приехал 📍</button>
             <button class="btn btn-ghost" style="flex:1" onclick="startRide()" id="btn-start-ride" disabled>Начать поездку ▶</button>
@@ -899,14 +528,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         </div>
       </div>
     </div>
-
-    <!-- DRIVER HISTORY TAB -->
-    <div id="d-hist-tab" style="display:none">
-      <div class="stitle">История поездок</div>
-      <div id="d-hist-list"></div>
-    </div>
-
-    <!-- DRIVER PROFILE TAB -->
+    <div id="d-hist-tab" style="display:none"><div class="stitle">История поездок</div><div id="d-hist-list"></div></div>
     <div id="d-prof-tab" style="display:none">
       <div class="prof-hero">
         <div class="prof-av">🚗</div>
@@ -919,8 +541,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
         <div class="stat"><div class="stat-val" id="dp-rating">—</div><div class="stat-lbl">Рейтинг</div></div>
         <div class="stat"><div class="stat-val" id="dp-shift-trips">0</div><div class="stat-lbl">За смену</div></div>
       </div>
-      <!-- TON subscription info -->
-      <div class="ton-card" id="dp-ton-card" style="margin-bottom:12px">
+      <div class="ton-card" style="margin-bottom:12px">
         <div class="ton-title">TON Подписка</div>
         <div class="ton-desc" id="dp-ton-desc">Загрузка...</div>
         <button class="btn" style="background:#fff;color:#0088cc;font-size:13px;padding:10px" onclick="openTonPayment()">Оплатить через TON 💎</button>
@@ -939,93 +560,44 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 </div>
 
-<!-- ===== INTERCITY PASSENGER ===== -->
+<!-- INTERCITY -->
 <div class="screen" id="s-intercity">
   <div class="hdr">
-    <div class="hdr-left">
-      <span style="font-size:11px;color:var(--text3)">Режим</span>
-      <h2>МЕЖГОРОД</h2>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <span class="badge badge-ic">Межгород</span>
-      <button class="role-sw" onclick="goBack()">← Назад</button>
-    </div>
+    <div class="hdr-left"><span style="font-size:11px;color:var(--text3)">Режим</span><h2>МЕЖГОРОД</h2></div>
+    <div style="display:flex;align-items:center;gap:8px"><span class="badge badge-ic">Межгород</span><button class="role-sw" onclick="goBack()">← Назад</button></div>
   </div>
   <div class="scroll">
     <div class="route-box" style="margin-bottom:12px">
-      <button class="route-row" onclick="openAddrModal('ic-from')">
-        <div class="rdot rdot-a"></div>
-        <div style="flex:1">
-          <div class="rtext" id="ic-from-txt"><span class="rtext-ph">Город и адрес отправления</span></div>
-        </div>
-        <span style="color:var(--text3);font-size:18px">›</span>
-      </button>
+      <button class="route-row" onclick="openAddrModal('ic-from')"><div class="rdot rdot-a"></div><div style="flex:1"><div class="rtext" id="ic-from-txt"><span class="rtext-ph">Город и адрес отправления</span></div></div><span style="color:var(--text3);font-size:18px">›</span></button>
       <div class="rdiv"></div>
-      <button class="route-row" onclick="openAddrModal('ic-to')">
-        <div class="rdot rdot-b"></div>
-        <div style="flex:1">
-          <div class="rtext" id="ic-to-txt"><span class="rtext-ph">Город и адрес назначения</span></div>
-        </div>
-        <span style="color:var(--text3);font-size:18px">›</span>
-      </button>
+      <button class="route-row" onclick="openAddrModal('ic-to')"><div class="rdot rdot-b"></div><div style="flex:1"><div class="rtext" id="ic-to-txt"><span class="rtext-ph">Город и адрес назначения</span></div></div><span style="color:var(--text3);font-size:18px">›</span></button>
     </div>
-
     <div class="slabel">Дата поездки</div>
     <div class="date-scroll" id="ic-date-scroll"></div>
-
     <div class="slabel">Время отправления</div>
-    <div class="time-wheel">
-      <div class="tw-inner" id="tw-inner"></div>
-      <div class="tw-overlay-top"></div>
-      <div class="tw-overlay-bot"></div>
-      <div class="tw-line"></div>
-      <div class="tw-line2"></div>
-    </div>
-
+    <div class="time-wheel"><div class="tw-inner" id="tw-inner"></div><div class="tw-overlay-top"></div><div class="tw-overlay-bot"></div><div class="tw-line"></div><div class="tw-line2"></div></div>
     <div class="slabel">Тип поездки</div>
     <div class="ic-type-row">
       <div class="ic-type on" id="ic-t-0" onclick="selIcType(0)">👥 С попутчиками</div>
       <div class="ic-type" id="ic-t-1" onclick="selIcType(1)">📦 Посылка</div>
       <div class="ic-type" id="ic-t-2" onclick="selIcType(2)">🚗 Весь салон</div>
     </div>
-
     <div class="slabel">Цена</div>
-    <div class="price-wrap">
-      <span class="pcur">₸</span>
-      <input class="pinput" type="number" id="ic-price" placeholder="0">
-    </div>
-
-    <div class="field" style="margin-bottom:14px">
-      <label>Комментарий</label>
-      <textarea id="ic-comment" placeholder="Пожелания, подробности..."></textarea>
-    </div>
-
+    <div class="price-wrap"><span class="pcur">₸</span><input class="pinput" type="number" id="ic-price" placeholder="0"></div>
+    <div class="field" style="margin-bottom:14px"><label>Комментарий</label><textarea id="ic-comment" placeholder="Пожелания, подробности..."></textarea></div>
     <button class="btn btn-y" onclick="createIcOrder()">Разместить заявку 🛣️</button>
-
-    <!-- IC orders list for this passenger -->
-    <div id="ic-my-orders" style="margin-top:20px">
-      <div class="stitle">Мои межгородние заявки</div>
-      <div id="ic-my-orders-list"></div>
-    </div>
+    <div id="ic-my-orders" style="margin-top:20px"><div class="stitle">Мои межгородние заявки</div><div id="ic-my-orders-list"></div></div>
   </div>
 </div>
 
-<!-- ===== SUPPORT CHAT SCREEN ===== -->
+<!-- SUPPORT CHAT -->
 <div class="screen" id="s-support">
   <div class="hdr">
-    <div class="hdr-left">
-      <span style="font-size:11px;color:var(--text3)">Поддержка</span>
-      <h2>ЧАТ</h2>
-    </div>
+    <div class="hdr-left"><span style="font-size:11px;color:var(--text3)">Поддержка</span><h2>ЧАТ</h2></div>
     <button class="role-sw" onclick="closeSupportChat()">← Назад</button>
   </div>
   <div class="chat-wrap">
-    <div class="chat-msgs" id="support-msgs">
-      <div class="msg msg-in">
-        Привет! Чем могу помочь? 😊
-        <div class="msg-time">Сейчас</div>
-      </div>
-    </div>
+    <div class="chat-msgs" id="support-msgs"><div class="msg msg-in">Привет! Чем могу помочь? 😊<div class="msg-time">Сейчас</div></div></div>
     <div class="chat-input-row">
       <input class="chat-input" id="support-input" placeholder="Ваше сообщение..." onkeydown="if(event.key==='Enter')sendSupportMsg()">
       <button class="chat-send" onclick="sendSupportMsg()">➤</button>
@@ -1033,28 +605,18 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
   </div>
 </div>
 
-<!-- ===== MODALS ===== -->
-
-<!-- Address Modal -->
+<!-- MODALS -->
 <div class="mo" id="mo-address">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle" id="mo-addr-title">Введите адрес</div>
     <div class="fgroup">
-      <div class="field">
-        <label>Адрес</label>
-        <input type="text" id="mo-addr-input" placeholder="Улица, дом">
-      </div>
-      <div class="field">
-        <label>Подъезд (необязательно)</label>
-        <input type="number" id="mo-ent-input" placeholder="№ подъезда" min="1" max="20">
-      </div>
+      <div class="field"><label>Адрес</label><input type="text" id="mo-addr-input" placeholder="Улица, дом"></div>
+      <div class="field"><label>Подъезд (необязательно)</label><input type="number" id="mo-ent-input" placeholder="№ подъезда" min="1" max="20"></div>
     </div>
     <button class="btn btn-y" onclick="saveAddr()">Сохранить</button>
   </div>
 </div>
-
-<!-- Passengers modal -->
 <div class="mo" id="mo-pax">
   <div class="ms">
     <div class="mhandle"></div>
@@ -1067,219 +629,116 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
     <button class="btn btn-y" onclick="savePax()">Готово</button>
   </div>
 </div>
-
-<!-- Payment modal -->
 <div class="mo" id="mo-pay">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle">Оплата</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
-      <div class="card" style="cursor:pointer;margin-bottom:0" id="pay-cash" onclick="selPay('cash')">
-        <div class="card-b" style="display:flex;align-items:center;gap:14px">
-          <span style="font-size:28px">💵</span>
-          <div><div style="font-weight:800">Наличные</div><div style="font-size:12px;color:var(--text2)">Оплата водителю лично</div></div>
-          <span id="pay-cash-check" style="margin-left:auto;color:var(--y);font-size:18px">✓</span>
-        </div>
-      </div>
-      <div class="card" style="cursor:pointer;margin-bottom:0" id="pay-transfer" onclick="selPay('transfer')">
-        <div class="card-b" style="display:flex;align-items:center;gap:14px">
-          <span style="font-size:28px">📲</span>
-          <div><div style="font-weight:800">Перевод</div><div style="font-size:12px;color:var(--text2)">Kaspi, Halyk и др.</div></div>
-          <span id="pay-transfer-check" style="margin-left:auto;color:var(--text3);font-size:18px">✓</span>
-        </div>
-      </div>
+      <div class="card" style="cursor:pointer;margin-bottom:0" onclick="selPay('cash')"><div class="card-b" style="display:flex;align-items:center;gap:14px"><span style="font-size:28px">💵</span><div><div style="font-weight:800">Наличные</div><div style="font-size:12px;color:var(--text2)">Оплата водителю лично</div></div><span id="pay-cash-check" style="margin-left:auto;color:var(--y);font-size:18px">✓</span></div></div>
+      <div class="card" style="cursor:pointer;margin-bottom:0" onclick="selPay('transfer')"><div class="card-b" style="display:flex;align-items:center;gap:14px"><span style="font-size:28px">📲</span><div><div style="font-weight:800">Перевод</div><div style="font-size:12px;color:var(--text2)">Kaspi, Halyk и др.</div></div><span id="pay-transfer-check" style="margin-left:auto;color:var(--text3);font-size:18px">✓</span></div></div>
     </div>
     <button class="btn btn-y" onclick="closeModal('mo-pay')">Готово</button>
   </div>
 </div>
-
-<!-- Driver offer modal -->
 <div class="mo" id="mo-drv-offer">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle">Предложить цену</div>
     <div style="margin-bottom:8px;color:var(--text2);font-size:13px">Цена пассажира: <strong style="color:var(--y)" id="doi-pprice">—</strong></div>
-    <div class="price-wrap" style="margin-bottom:10px">
-      <span class="pcur">₸</span>
-      <input class="pinput" type="number" id="doi-price" placeholder="0">
-    </div>
-    <div class="field" style="margin-bottom:14px">
-      <label>Приблизительное время прибытия (минуты)</label>
-      <input type="number" id="doi-eta" placeholder="10" min="1" max="120">
-    </div>
+    <div class="price-wrap" style="margin-bottom:10px"><span class="pcur">₸</span><input class="pinput" type="number" id="doi-price" placeholder="0"></div>
+    <div class="field" style="margin-bottom:14px"><label>Время прибытия (минуты)</label><input type="number" id="doi-eta" placeholder="10" min="1" max="120"></div>
     <button class="btn btn-y" onclick="submitOffer()">Отправить предложение</button>
     <button class="btn btn-out" style="margin-top:8px" onclick="closeModal('mo-drv-offer')">Отмена</button>
   </div>
 </div>
-
-<!-- Rating modal -->
 <div class="mo" id="mo-rating">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle" id="rating-title">Оцените поездку</div>
     <div style="color:var(--text2);font-size:13px;margin-bottom:4px" id="rating-sub">Как всё прошло?</div>
-    <div class="srow" id="stars-row">
+    <div class="srow">
       <button class="sbtn" data-v="1" onclick="setStar(1)">⭐</button>
       <button class="sbtn" data-v="2" onclick="setStar(2)">⭐</button>
       <button class="sbtn" data-v="3" onclick="setStar(3)">⭐</button>
       <button class="sbtn" data-v="4" onclick="setStar(4)">⭐</button>
       <button class="sbtn" data-v="5" onclick="setStar(5)">⭐</button>
     </div>
-    <div class="field" style="margin-bottom:12px">
-      <textarea id="rating-comment" placeholder="Комментарий (необязательно)"></textarea>
-    </div>
+    <div class="field" style="margin-bottom:12px"><textarea id="rating-comment" placeholder="Комментарий (необязательно)"></textarea></div>
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:700;margin-bottom:8px">
       <input type="checkbox" id="complaint-check" style="width:16px;height:16px;accent-color:var(--red)">
       <span>Пожаловаться</span>
     </label>
-    <div id="complaint-wrap" style="display:none;margin-bottom:12px">
-      <textarea id="complaint-text" placeholder="Опишите проблему..."></textarea>
-    </div>
+    <div id="complaint-wrap" style="display:none;margin-bottom:12px"><textarea id="complaint-text" placeholder="Опишите проблему..."></textarea></div>
     <button class="btn btn-y" onclick="submitRating()">Отправить оценку</button>
   </div>
 </div>
-
-<!-- Settings modal -->
 <div class="mo" id="mo-settings">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle">Настройки</div>
     <div class="fgroup">
-      <div class="field">
-        <label>Имя</label>
-        <input type="text" id="set-name" placeholder="Ваше имя">
-      </div>
+      <div class="field"><label>Имя</label><input type="text" id="set-name" placeholder="Ваше имя"></div>
       <div class="frow">
-        <div class="field">
-          <label>Страна</label>
+        <div class="field"><label>Страна</label>
           <select id="set-country" onchange="fillCities('set-city','set-country')">
             <option value="kz">🇰🇿 Казахстан</option>
-            <!-- другие страны -->
+            <option value="ru">🇷🇺 Россия</option>
+            <option value="by">🇧🇾 Беларусь</option>
+            <option value="uz">🇺🇿 Узбекистан</option>
+            <option value="kg">🇰🇬 Кыргызстан</option>
           </select>
         </div>
-        <div class="field">
-          <label>Город</label>
-          <select id="set-city"></select>
-        </div>
+        <div class="field"><label>Город</label><select id="set-city"></select></div>
       </div>
-
-      <!-- === БЛОК СТАТЬ ВОДИТЕЛЕМ === -->
-      <div id="become-driver-block" style="display:none; margin-top:20px; padding:16px; background:var(--bg3); border:1px solid var(--y); border-radius:12px;">
+      <div id="become-driver-block" style="display:none;margin-top:16px;padding:16px;background:var(--bg3);border:1px solid var(--y);border-radius:12px">
         <div class="slabel" style="color:var(--y)">Хотите стать водителем?</div>
         <div class="frow">
-          <div class="field">
-            <label>Марка авто</label>
-            <input type="text" id="set-car-brand" placeholder="Toyota Camry">
-          </div>
-          <div class="field">
-            <label>Год выпуска</label>
-            <input type="number" id="set-car-year" placeholder="2022" min="1990" max="2026">
-          </div>
+          <div class="field"><label>Марка авто</label><input type="text" id="set-car-brand" placeholder="Toyota Camry"></div>
+          <div class="field"><label>Год выпуска</label><input type="number" id="set-car-year" placeholder="2022" min="1990" max="2026"></div>
         </div>
         <div class="frow">
-          <div class="field">
-            <label>Гос. номер</label>
-            <input type="text" id="set-car-num" placeholder="A123BC" style="text-transform:uppercase">
-          </div>
-          <div class="field">
-            <label>Цвет</label>
-            <input type="text" id="set-car-color" placeholder="Белый">
-          </div>
+          <div class="field"><label>Гос. номер</label><input type="text" id="set-car-num" placeholder="A123BC" style="text-transform:uppercase"></div>
+          <div class="field"><label>Цвет</label><input type="text" id="set-car-color" placeholder="Белый"></div>
         </div>
-        <button class="btn btn-y" onclick="becomeDriver()" style="margin-top:12px;width:100%">Подать заявку на водителя</button>
+        <button class="btn btn-y" onclick="becomeDriver()" style="margin-top:12px">Подать заявку на водителя</button>
       </div>
     </div>
     <button class="btn btn-y" onclick="saveSettings()">Сохранить</button>
     <button class="btn btn-out" style="margin-top:8px" onclick="closeModal('mo-settings')">Отмена</button>
   </div>
 </div>
-
-<!-- TON Payment modal -->
 <div class="mo" id="mo-ton">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle">Оплата смены</div>
     <div class="ton-card" style="margin-bottom:16px">
       <div class="ton-title">500₸ в TON</div>
-      <div class="ton-desc">
-        Оплата открывает доступ к заказам на 1 день (до 00:00).<br>
-        Если вы начинаете смену после 16:00 — доступ на 12 часов.
-      </div>
+      <div class="ton-desc">Оплата открывает доступ к заказам на 1 день (до 00:00).<br>После 16:00 — на 12 часов.</div>
     </div>
-    <div id="ton-connect-wrap" style="margin-bottom:14px;min-height:44px"></div>
-    <div style="font-size:11px;color:var(--text3);text-align:center;line-height:1.6">
-      Курс TON рассчитывается автоматически по текущему курсу.<br>
-      После оплаты доступ активируется мгновенно.
-    </div>
+    <div id="ton-connect-wrap" style="margin-bottom:14px"></div>
     <button class="btn btn-out" style="margin-top:12px" onclick="closeModal('mo-ton')">Закрыть</button>
   </div>
 </div>
-
-<!-- IC Order contacts modal -->
 <div class="mo" id="mo-ic-contact">
   <div class="ms">
     <div class="mhandle"></div>
     <div class="mtitle">Связаться с пассажиром</div>
-    <div style="color:var(--text2);font-size:13px;margin-bottom:16px">Позвоните пассажиру чтобы договориться об условиях</div>
-    <div class="card" style="margin-bottom:14px">
-      <div class="card-b">
-        <div style="font-weight:800;font-size:16px;margin-bottom:4px" id="ic-contact-name">—</div>
-        <div style="font-size:13px;color:var(--text2);margin-bottom:10px" id="ic-contact-phone">—</div>
-        <div id="ic-contact-route" style="font-size:13px;color:var(--text2)">—</div>
-      </div>
-    </div>
+    <div class="card" style="margin-bottom:14px"><div class="card-b">
+      <div style="font-weight:800;font-size:16px;margin-bottom:4px" id="ic-contact-name">—</div>
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px" id="ic-contact-phone">—</div>
+      <div id="ic-contact-route" style="font-size:13px;color:var(--text2)">—</div>
+    </div></div>
     <a id="ic-call-btn" href="tel:" class="btn btn-y" style="display:block;text-align:center;text-decoration:none;line-height:1.5">📞 Позвонить</a>
     <button class="btn btn-out" style="margin-top:8px" onclick="closeModal('mo-ic-contact')">Закрыть</button>
   </div>
 </div>
 
-<!-- Toast -->
 <div class="toast" id="toast"></div>
 
 <script>
-
-// ====================== STATE ======================
-// ====================== STATE ======================
-let STATE = {
-  registered: false,
-  role: 'passenger',
-  user: null,
-  // order state
-  activeOrderId: null,
-  driverActiveOrderId: null,
-  // ui
-  obRole: '',
-  addrTarget: '',
-  fromAddr: null,
-  toAddr: null,
-  icFromAddr: null,
-  icToAddr: null,
-  pax: 1,
-  childSeat: false,
-  payMethod: 'cash',
-  geoEnabled: false,
-  // driver
-  driverMode: 'city',
-  shiftActive: false,
-  shiftUntil: null,
-  shiftTrips: 0,
-  paidToday: null,
-  bonusSystemEnabled: false,
-  // rating
-  ratingFor: null,
-  ratingOrderId: null,
-  currentRating: 0,
-  currentOfferOrderId: null,
-  // intercity
-  icDate: null,
-  icTime: null,
-  icType: 0,
-  // support
-  supportChatFrom: null,
-  icContactOrderId: null,
-};
-
-// ====================== FIREBASE CONFIG ======================
+// ====================================
+// FIREBASE CONFIG
+// ====================================
 const firebaseConfig = {
   apiKey: "AIzaSyDnH2Uz70mnGuQ85WzNAOsUmgGYqXwfGcg",
   authDomain: "telegram-taxi-20164.firebaseapp.com",
@@ -1289,119 +748,51 @@ const firebaseConfig = {
   appId: "1:713264125968:web:258e0e18654cbdf2ea9295"
 };
 
+// ====================================
+// GLOBALS — объявлены ОДИН РАЗ
+// ====================================
 let db = null;
 let isFirebaseReady = false;
-
-function initFirebase() {
-  try {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    db = firebase.firestore();
-    isFirebaseReady = true;
-    console.log("Firebase ready");
-    firebase.auth().signInAnonymously().catch(e => console.warn("Auth:", e));
-  } catch(e) {
-    console.error("Firebase init error:", e);
-    isFirebaseReady = false;
-  }
-}
-
-// ====================== BECOME DRIVER ======================
-async function becomeDriver() {
-  const brand = document.getElementById('set-car-brand').value.trim();
-  const year = parseInt(document.getElementById('set-car-year').value);
-  const num = document.getElementById('set-car-num').value.trim().toUpperCase();
-  const color = document.getElementById('set-car-color').value.trim();
-
-  if (!brand || !num || !color || !year) {
-    showToast('Заполните все данные автомобиля!', 'err');
-    return;
-  }
-
-  try {
-    await db.collection('users').doc(STATE.user.tgId).set({
-      tgId: STATE.user.tgId,
-      name: STATE.user.name,
-      phone: STATE.user.phone,
-      country: STATE.user.country || 'kz',
-      city: STATE.user.city,
-      role: 'driver',
-      car: { brand, year, num, color },
-      rating: 5.0,
-      trips: 0,
-      approved: false,
-      appliedForDriverAt: new Date().toISOString()
-    }, { merge: true });
-
-    STATE.user.role = 'driver';
-    STATE.user.car = { brand, year, num, color };
-    STATE.user.approved = false;
-
-    saveState();
-    closeModal('mo-settings');
-    showToast('✅ Заявка на водителя отправлена! Ожидайте подтверждения.', 'ok');
-    updateAllUI();
-  } catch(e) {
-    console.error(e);
-    showToast('Ошибка при отправке заявки', 'err');
-  }
-}
-
-
-// ====================================
-// ADMIN CONFIG
-// ====================================
-const ADMIN_TG_IDS = [7336812148]; // замените на ваш Telegram ID
-const APP_NAME = "Telegram Taxi";
-
-// ====================================
-// GLOBALS
-// ====================================
-const CITIES = {
-  kz:['Рудный','Алматы','Астана','Шымкент','Қарағанды','Актобе','Тараз','Павлодар','Усть-Каменогорск','Костанай','Актау','Атырау','Петропавловск','Кокшетау','Талдыкорган'],
-  ru:['Москва','Санкт-Петербург','Екатеринбург','Новосибирск','Казань','Краснодар','Уфа','Челябинск','Самара','Ростов-на-Дону','Омск','Красноярск','Воронеж','Волгоград','Пермь'],
-  by:['Минск','Гомель','Могилёв','Витебск','Гродно','Брест','Борисов','Барановичи'],
-  uz:['Ташкент','Самарканд','Наманган','Андижан','Фергана','Бухара','Нукус','Карши'],
-  kg:['Бишкек','Ош','Джалал-Абад','Нарын','Каракол','Токмок','Балыкчы']
-};
-
-const TON_PER_DAY = 500; // тенге
-const FREE_MONTHS = 1;
-const BONUS_TRIPS_PER_SHIFT = 30; // за 30 поездок - след смена бесплатно
-
 let unsubOrders = null;
-let unsubIcOrders = null;
 let unsubSupportChat = null;
 let arrivalSoundInterval = null;
 let geoWatchId = null;
-let geoTransmitInterval = null;
 
+const CITIES = {
+  kz:['Рудный','Алматы','Астана','Шымкент','Қарағанды','Актобе','Тараз','Павлодар','Усть-Каменогорск','Костанай','Актау','Атырау','Петропавловск','Кокшетау'],
+  ru:['Москва','Санкт-Петербург','Екатеринбург','Новосибирск','Казань','Краснодар','Уфа','Челябинск','Самара','Ростов-на-Дону'],
+  by:['Минск','Гомель','Могилёв','Витебск','Гродно','Брест'],
+  uz:['Ташкент','Самарканд','Наманган','Андижан','Фергана','Бухара'],
+  kg:['Бишкек','Ош','Джалал-Абад','Нарын','Каракол']
+};
+
+const FREE_MONTHS = 1;
+const BONUS_TRIPS_PER_SHIFT = 30;
+
+// ====================================
+// STATE — объявлен ОДИН РАЗ
+// ====================================
 let STATE = {
   registered: false,
-  role: 'passenger', // passenger | driver
+  role: 'passenger',
   user: null,
-  // order state
   activeOrderId: null,
   driverActiveOrderId: null,
-  // ui
   obRole: '',
   addrTarget: '',
   fromAddr: null, toAddr: null,
   icFromAddr: null, icToAddr: null,
   pax: 1, childSeat: false, payMethod: 'cash',
   geoEnabled: false,
-  // driver
-  driverMode: 'city', // city | intercity
+  driverMode: 'city',
   shiftActive: false,
   shiftUntil: null,
   shiftTrips: 0,
-  // rating
+  paidToday: null,
+  bonusSystemEnabled: false,
   ratingFor: null, ratingOrderId: null, currentRating: 0,
   currentOfferOrderId: null,
-  // ic
   icDate: null, icTime: null, icType: 0,
-  // support
   supportChatFrom: null,
   icContactOrderId: null,
 };
@@ -1410,7 +801,7 @@ let STATE = {
 // TELEGRAM WEBAPP
 // ====================================
 const tg = (window.Telegram && window.Telegram.WebApp) || {
-  initDataUnsafe:{user:{id:1001,first_name:'Тест',username:'test'}},
+  initDataUnsafe:{user:{id: Date.now(), first_name:'Пользователь', username:'user'}},
   ready:()=>{}, expand:()=>{},
   sendData:(d)=>console.log('[TG]',d),
   MainButton:{show:()=>{},hide:()=>{},setText:()=>{},onClick:()=>{},offClick:()=>{}},
@@ -1419,18 +810,39 @@ const tg = (window.Telegram && window.Telegram.WebApp) || {
   showConfirm:(t,cb)=>{cb(confirm(t));},
   close:()=>{}
 };
-tg.ready(); tg.expand();
+tg.ready();
+tg.expand();
 
 // ====================================
-// STORAGE HELPERS (Firebase + LS fallback)
+// FIREBASE INIT
+// ====================================
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    isFirebaseReady = true;
+    console.log('Firebase ready');
+    // Анонимная аутентификация
+    firebase.auth().signInAnonymously()
+      .then(() => console.log('Auth ok'))
+      .catch(e => console.warn('Auth warn:', e.message));
+  } catch(e) {
+    console.error('Firebase init error:', e);
+    isFirebaseReady = false;
+  }
+}
+
+// ====================================
+// STORAGE HELPERS
 // ====================================
 async function dbSet(collection, docId, data) {
   const payload = {...data, _updatedAt: new Date().toISOString()};
   if (isFirebaseReady) {
     await db.collection(collection).doc(docId).set(payload, {merge: true});
   } else {
-    const key = `tt_${collection}_${docId}`;
-    localStorage.setItem(key, JSON.stringify(payload));
+    localStorage.setItem(`tt_${collection}_${docId}`, JSON.stringify(payload));
   }
 }
 
@@ -1449,17 +861,13 @@ async function dbQuery(collection, field, op, value) {
     const snap = await db.collection(collection).where(field, op, value).get();
     return snap.docs.map(d => ({id: d.id, ...d.data()}));
   } else {
-    // LS fallback: scan all keys
     const results = [];
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
       if (!key.startsWith(`tt_${collection}_`)) continue;
       try {
         const doc = JSON.parse(localStorage.getItem(key));
-        if (doc && evalOp(doc[field], op, value)) {
-          const id = key.replace(`tt_${collection}_`, '');
-          results.push({id, ...doc});
-        }
+        if (doc && evalOp(doc[field], op, value)) results.push({id: key.replace(`tt_${collection}_`,''), ...doc});
       } catch(e){}
     }
     return results;
@@ -1473,19 +881,13 @@ function evalOp(a, op, b) {
   return false;
 }
 
-function onSnapshot(collection, field, op, value, cb) {
+function onSnapshotQuery(collection, field, op, value, cb) {
   if (isFirebaseReady) {
-    return db.collection(collection).where(field, op, value)
-      .onSnapshot(snap => {
-        const docs = snap.docs.map(d => ({id: d.id, ...d.data()}));
-        cb(docs);
-      });
+    return db.collection(collection).where(field, op, value).onSnapshot(snap => {
+      cb(snap.docs.map(d => ({id: d.id, ...d.data()})));
+    });
   } else {
-    // Polling fallback every 3s
-    const poll = setInterval(async () => {
-      const docs = await dbQuery(collection, field, op, value);
-      cb(docs);
-    }, 3000);
+    const poll = setInterval(async () => { cb(await dbQuery(collection, field, op, value)); }, 3000);
     return () => clearInterval(poll);
   }
 }
@@ -1517,20 +919,26 @@ function loadState() {
   } catch(e){}
 }
 
+function showLoading(v) {
+  document.getElementById('loading-overlay').classList.toggle('show', v);
+}
+
 // ====================================
 // BOOT
 // ====================================
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', () => {
   loadState();
   initFirebase();
-
-  // Init IC date/time wheels
   buildDateScroll();
   buildTimeWheel();
 
-  // Complaint checkbox handler
   document.getElementById('complaint-check').addEventListener('change', function() {
     document.getElementById('complaint-wrap').style.display = this.checked ? 'block' : 'none';
+  });
+
+  // Закрытие модалок по клику на оверлей
+  document.querySelectorAll('.mo').forEach(overlay => {
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.classList.remove('open'); });
   });
 
   setTimeout(() => {
@@ -1546,18 +954,19 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 function prefillTg() {
   const u = tg.initDataUnsafe && tg.initDataUnsafe.user;
-  if (u) {
+  if (u && u.first_name) {
     const el = document.getElementById('reg-name');
     if (el) el.value = u.first_name + (u.last_name ? ' ' + u.last_name : '');
   }
 }
 
 async function initMain() {
-  // Reload user from DB
   if (isFirebaseReady && STATE.user) {
-    const fresh = await dbGet('users', String(STATE.user.tgId || STATE.user.id));
-    if (fresh) STATE.user = {...STATE.user, ...fresh};
-    saveState();
+    try {
+      const fresh = await dbGet('users', String(STATE.user.tgId));
+      if (fresh) STATE.user = {...STATE.user, ...fresh};
+      saveState();
+    } catch(e) { console.warn('initMain reload:', e); }
   }
   updateAllUI();
   if (STATE.role === 'passenger') {
@@ -1580,7 +989,7 @@ function showScreen(id, animate = true) {
   if (!animate) {
     el.style.transition = 'none';
     el.classList.add('active');
-    setTimeout(() => el.style.transition = '', 50);
+    setTimeout(() => { el.style.transition = ''; }, 50);
   } else {
     el.classList.add('active');
   }
@@ -1589,8 +998,6 @@ function showScreen(id, animate = true) {
 // ====================================
 // ONBOARDING
 // ====================================
-let obStep = 1;
-
 function selRole(r) {
   STATE.obRole = r;
   document.querySelectorAll('.role-card').forEach(c => c.classList.toggle('sel', c.dataset.role === r));
@@ -1619,22 +1026,25 @@ function obNext(step) {
   }
 }
 
-function obBack(step) {
-  setObStep(step - 1);
-}
+function obBack(step) { setObStep(step - 1); }
 
 function setObStep(n) {
-  obStep = n;
   document.querySelectorAll('.ob-step').forEach((s, i) => s.classList.toggle('active', i + 1 === n));
-  [1, 2, 3].forEach(i => document.getElementById('sd' + i).classList.toggle('active', i <= n));
+  [1,2,3].forEach(i => document.getElementById('sd' + i).classList.toggle('active', i <= n));
 }
 
+// ГЛАВНАЯ ИСПРАВЛЕННАЯ ФУНКЦИЯ
 async function finishReg() {
+  const btn = document.getElementById('btn-finish-reg');
   const name = document.getElementById('reg-name').value.trim();
   const dob = document.getElementById('reg-dob').value;
   const phone = document.getElementById('reg-phone').value.trim();
   const country = document.getElementById('reg-country').value;
   const city = document.getElementById('reg-city').value;
+
+  if (!name) { showToast('Введите имя', 'err'); return; }
+  if (!phone) { showToast('Введите телефон', 'err'); return; }
+  if (!country || !city) { showToast('Выберите страну и город', 'err'); return; }
 
   if (STATE.obRole === 'driver') {
     const brand = document.getElementById('reg-car-brand').value.trim();
@@ -1642,42 +1052,62 @@ async function finishReg() {
     const color = document.getElementById('reg-car-color').value.trim();
     const year = document.getElementById('reg-car-year').value;
     if (!brand || !num || !color) { showToast('Заполните данные авто', 'err'); return; }
-    if (!year || year < 1990 || year > 2025) { showToast('Укажите корректный год', 'err'); return; }
+    if (!year || parseInt(year) < 1990) { showToast('Укажите корректный год', 'err'); return; }
   }
 
-  const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
-  const tgId = tgUser ? String(tgUser.id) : 'local_' + Date.now();
+  // Блокируем кнопку и показываем загрузку
+  btn.disabled = true;
+  btn.textContent = 'Сохранение...';
+  showLoading(true);
 
-  const user = {
-    tgId, name, dob: dob || '', phone, country, city,
-    role: STATE.obRole,
-    rating: 5.0, ratingCount: 0, trips: 0,
-    createdAt: new Date().toISOString(),
-    approved: STATE.obRole === 'passenger',
-    freeUntil: new Date(Date.now() + FREE_MONTHS * 30 * 24 * 3600 * 1000).toISOString(),
-    bonusTrips: 0,
-  };
+  try {
+    const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    const tgId = tgUser && tgUser.id ? String(tgUser.id) : 'local_' + Date.now();
 
-  if (STATE.obRole === 'driver') {
-    user.car = {
-      brand: document.getElementById('reg-car-brand').value.trim(),
-      num: document.getElementById('reg-car-num').value.trim().toUpperCase(),
-      color: document.getElementById('reg-car-color').value.trim(),
-      year: document.getElementById('reg-car-year').value,
+    const user = {
+      tgId, name, dob: dob || '', phone, country, city,
+      role: STATE.obRole,
+      rating: 5.0, ratingCount: 0, trips: 0,
+      createdAt: new Date().toISOString(),
+      approved: STATE.obRole === 'passenger',
+      freeUntil: new Date(Date.now() + FREE_MONTHS * 30 * 24 * 3600 * 1000).toISOString(),
+      bonusTrips: 0,
     };
-    user.approved = false;
-    user.driverMode = 'city';
+
+    if (STATE.obRole === 'driver') {
+      user.car = {
+        brand: document.getElementById('reg-car-brand').value.trim(),
+        num: document.getElementById('reg-car-num').value.trim().toUpperCase(),
+        color: document.getElementById('reg-car-color').value.trim(),
+        year: document.getElementById('reg-car-year').value,
+      };
+      user.approved = false;
+      user.driverMode = 'city';
+    }
+
+    STATE.user = user;
+    STATE.role = STATE.obRole;
+    STATE.registered = true;
+    saveState(); // Сохраняем в localStorage сразу
+
+    // Пробуем сохранить в Firebase, но не блокируем если не получится
+    try {
+      await dbSet('users', tgId, user);
+    } catch(e) {
+      console.warn('Firebase save failed, using localStorage:', e);
+    }
+
+    showLoading(false);
+    showToast('Регистрация завершена!', 'ok');
+    setTimeout(() => initMain(), 600);
+
+  } catch(e) {
+    console.error('finishReg error:', e);
+    showLoading(false);
+    btn.disabled = false;
+    btn.textContent = 'Начать 🚀';
+    showToast('Ошибка регистрации, попробуйте ещё раз', 'err');
   }
-
-  STATE.user = user;
-  STATE.role = STATE.obRole;
-  STATE.registered = true;
-  saveState();
-
-  await dbSet('users', tgId, user);
-
-  showToast('Регистрация завершена!', 'ok');
-  setTimeout(() => initMain(), 500);
 }
 
 // ====================================
@@ -1700,21 +1130,20 @@ function fillCities(selectId, countryId) {
 function updateAllUI() {
   if (!STATE.user) return;
   const u = STATE.user;
-  // Passenger
-  document.getElementById('p-hdr-name').textContent = u.name.split(' ')[0];
-  document.getElementById('pp-name').textContent = u.name;
-  document.getElementById('pp-phone').textContent = u.phone;
-  document.getElementById('pp-city').textContent = (u.city || '') + (u.country ? ', ' + u.country.toUpperCase() : '');
-  document.getElementById('pp-trips').textContent = u.trips || 0;
-  document.getElementById('pp-rating').textContent = fmtRating(u.rating);
-  // Driver
-  document.getElementById('d-hdr-name').textContent = u.name.split(' ')[0];
-  document.getElementById('dp-name').textContent = u.name;
-  document.getElementById('dp-phone').textContent = u.phone;
-  if (u.car) document.getElementById('dp-car').textContent = `${u.car.color} ${u.car.brand} ${u.car.year} · ${u.car.num}`;
-  document.getElementById('dp-trips').textContent = u.trips || 0;
-  document.getElementById('dp-rating').textContent = fmtRating(u.rating);
-  document.getElementById('dp-shift-trips').textContent = STATE.shiftTrips || 0;
+  const safeSet = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  safeSet('p-hdr-name', u.name.split(' ')[0]);
+  safeSet('pp-name', u.name);
+  safeSet('pp-phone', u.phone);
+  safeSet('pp-city', (u.city||'') + (u.country ? ', ' + u.country.toUpperCase() : ''));
+  safeSet('pp-trips', u.trips || 0);
+  safeSet('pp-rating', fmtRating(u.rating));
+  safeSet('d-hdr-name', u.name.split(' ')[0]);
+  safeSet('dp-name', u.name);
+  safeSet('dp-phone', u.phone);
+  if (u.car) safeSet('dp-car', `${u.car.color} ${u.car.brand} ${u.car.year} · ${u.car.num}`);
+  safeSet('dp-trips', u.trips || 0);
+  safeSet('dp-rating', fmtRating(u.rating));
+  safeSet('dp-shift-trips', STATE.shiftTrips || 0);
   updateTonStatus();
 }
 
@@ -1722,60 +1151,66 @@ function updateTonStatus() {
   const u = STATE.user;
   if (!u || u.role !== 'driver') return;
   const freeUntil = u.freeUntil ? new Date(u.freeUntil) : null;
-  const now = new Date();
-  const isFree = freeUntil && freeUntil > now;
-  const desc = isFree
-    ? `Бесплатный период до ${fmtDate(freeUntil.toISOString())}. После этого — 500₸/день.`
+  const isFree = freeUntil && freeUntil > new Date();
+  const el = document.getElementById('dp-ton-desc');
+  if (el) el.textContent = isFree
+    ? `Бесплатный период до ${fmtDate(freeUntil.toISOString())}. После — 500₸/день.`
     : `Бесплатный период истёк. Оплачивайте каждую смену через TON.`;
-  document.getElementById('dp-ton-desc').textContent = desc;
-  const driverPayWarn = document.getElementById('d-pay-warning');
-  if (driverPayWarn) driverPayWarn.style.display = isFree ? 'none' : 'block';
+  const warn = document.getElementById('d-pay-warning');
+  if (warn) warn.style.display = isFree ? 'none' : 'block';
 }
 
 function updateDriverUI() {
   const u = STATE.user;
   if (!u) return;
   const approved = u.approved !== false;
-  document.getElementById('d-pending-box').style.display = approved ? 'none' : 'block';
-  document.getElementById('d-approved-box').style.display = approved ? 'block' : 'none';
+  const pendingEl = document.getElementById('d-pending-box');
+  const approvedEl = document.getElementById('d-approved-box');
+  if (pendingEl) pendingEl.style.display = approved ? 'none' : 'block';
+  if (approvedEl) approvedEl.style.display = approved ? 'block' : 'none';
 
   if (approved) {
     const hasActive = !!STATE.driverActiveOrderId;
-    document.getElementById('d-offline-box').style.display = (!STATE.shiftActive && !hasActive) ? 'block' : 'none';
-    document.getElementById('d-online-box').style.display = (STATE.shiftActive && !hasActive) ? 'block' : 'none';
-    document.getElementById('d-active-order').style.display = hasActive ? 'block' : 'none';
+    const offEl = document.getElementById('d-offline-box');
+    const onEl = document.getElementById('d-online-box');
+    const actEl = document.getElementById('d-active-order');
+    if (offEl) offEl.style.display = (!STATE.shiftActive && !hasActive) ? 'block' : 'none';
+    if (onEl) onEl.style.display = (STATE.shiftActive && !hasActive) ? 'block' : 'none';
+    if (actEl) actEl.style.display = hasActive ? 'block' : 'none';
 
     if (STATE.shiftActive && STATE.shiftUntil) {
-      document.getElementById('d-shift-until').textContent = 'До ' + fmtTime(STATE.shiftUntil);
+      const el = document.getElementById('d-shift-until');
+      if (el) el.textContent = 'До ' + fmtTime(STATE.shiftUntil);
     }
-    document.getElementById('d-shift-trips').textContent = STATE.shiftTrips || 0;
-
-    const u = STATE.user;
-    const avgText = u.avgShiftTrips ? u.avgShiftTrips.toFixed(1) : '—';
-    document.getElementById('d-avg-trips').textContent = avgText;
-
-    // Bonus system
-    const bonusEnabled = STATE.bonusSystemEnabled;
-    if (bonusEnabled) {
-      document.getElementById('d-bonus-row').style.display = 'flex';
-      document.getElementById('d-bonus-left').textContent = Math.max(0, BONUS_TRIPS_PER_SHIFT - (STATE.shiftTrips || 0));
+    const stEl = document.getElementById('d-shift-trips');
+    if (stEl) stEl.textContent = STATE.shiftTrips || 0;
+    const avgEl = document.getElementById('d-avg-trips');
+    if (avgEl) avgEl.textContent = u.avgShiftTrips ? u.avgShiftTrips.toFixed(1) : '—';
+    if (STATE.bonusSystemEnabled) {
+      const bonusRow = document.getElementById('d-bonus-row');
+      if (bonusRow) bonusRow.style.display = 'flex';
+      const bonusLeft = document.getElementById('d-bonus-left');
+      if (bonusLeft) bonusLeft.textContent = Math.max(0, BONUS_TRIPS_PER_SHIFT - (STATE.shiftTrips||0));
     }
   }
 }
 
 async function updateOnlineCount() {
-  // Count online drivers in user's city
   if (!STATE.user) return;
   try {
-    const onlineDrivers = await dbQuery('driver_shifts', 'city', '==', STATE.user.city);
+    const drivers = await dbQuery('driver_shifts', 'city', '==', STATE.user.city);
     const now = new Date();
-    const activeShifts = onlineDrivers.filter(s => s.active && new Date(s.until) > now);
-    const freeDrivers = activeShifts.filter(s => !s.hasActiveOrder);
-    document.getElementById('oc-total').textContent = activeShifts.length;
-    document.getElementById('oc-free').textContent = freeDrivers.length;
+    const active = drivers.filter(s => s.active && new Date(s.until) > now);
+    const free = active.filter(s => !s.hasActiveOrder);
+    const t = document.getElementById('oc-total');
+    const f = document.getElementById('oc-free');
+    if (t) t.textContent = active.length;
+    if (f) f.textContent = free.length;
   } catch(e) {
-    document.getElementById('oc-total').textContent = Math.floor(Math.random()*8)+2;
-    document.getElementById('oc-free').textContent = Math.floor(Math.random()*5)+1;
+    const t = document.getElementById('oc-total');
+    const f = document.getElementById('oc-free');
+    if (t) t.textContent = Math.floor(Math.random()*8)+2;
+    if (f) f.textContent = Math.floor(Math.random()*5)+1;
   }
 }
 
@@ -1783,24 +1218,13 @@ async function updateOnlineCount() {
 // PASSENGER TABS
 // ====================================
 function pTab(n) {
-  [0,1,2].forEach(i => {
-    document.getElementById('p-ni-' + i).classList.toggle('on', i === n);
+  [0,1,2].forEach(i => document.getElementById('p-ni-'+i).classList.toggle('on', i===n));
+  ['p-new-order','p-searching','p-active-ride','p-hist-content','p-prof-content'].forEach(id => {
+    const el = document.getElementById(id); if(el) el.style.display = 'none';
   });
-  // Hide all tab sections
-  document.getElementById('p-new-order').style.display = 'none';
-  document.getElementById('p-searching').style.display = 'none';
-  document.getElementById('p-active-ride').style.display = 'none';
-  document.getElementById('p-hist-content').style.display = 'none';
-  document.getElementById('p-prof-content').style.display = 'none';
-
   if (n === 0) {
-    // Show appropriate order section
-    if (STATE.activeOrderId) {
-      // Determine state from DB
-      checkActiveOrderStatus();
-    } else {
-      document.getElementById('p-new-order').style.display = 'block';
-    }
+    if (STATE.activeOrderId) checkActiveOrderStatus();
+    else document.getElementById('p-new-order').style.display = 'block';
   } else if (n === 1) {
     document.getElementById('p-hist-content').style.display = 'block';
     renderPHistory();
@@ -1811,21 +1235,15 @@ function pTab(n) {
 }
 
 async function checkActiveOrderStatus() {
-  if (!STATE.activeOrderId) {
-    document.getElementById('p-new-order').style.display = 'block';
-    return;
-  }
+  if (!STATE.activeOrderId) { document.getElementById('p-new-order').style.display = 'block'; return; }
   const order = await dbGet('orders', STATE.activeOrderId);
   if (!order || order.status === 'cancelled' || order.status === 'done') {
-    STATE.activeOrderId = null;
-    saveState();
-    document.getElementById('p-new-order').style.display = 'block';
-    return;
+    STATE.activeOrderId = null; saveState();
+    document.getElementById('p-new-order').style.display = 'block'; return;
   }
   if (order.status === 'searching') {
     document.getElementById('p-searching').style.display = 'block';
-    renderOffers(order);
-    updateAob(order);
+    renderOffers(order); updateAob(order);
   } else if (['active','arrived','riding'].includes(order.status)) {
     document.getElementById('p-active-ride').style.display = 'block';
     updateActiveRide(order);
@@ -1836,16 +1254,13 @@ async function checkActiveOrderStatus() {
 // DRIVER TABS
 // ====================================
 function dTab(n) {
-  [0,1,2].forEach(i => {
-    document.getElementById('d-ni-' + i).classList.toggle('on', i === n);
-  });
-  document.getElementById('d-orders-tab').style.display = n === 0 ? 'block' : 'none';
-  document.getElementById('d-hist-tab').style.display = n === 1 ? 'block' : 'none';
-  document.getElementById('d-prof-tab').style.display = n === 2 ? 'block' : 'none';
-
-  if (n === 1) renderDHistory();
-  if (n === 2) updateAllUI();
-  if (n === 0) updateDriverUI();
+  [0,1,2].forEach(i => document.getElementById('d-ni-'+i).classList.toggle('on', i===n));
+  document.getElementById('d-orders-tab').style.display = n===0 ? 'block' : 'none';
+  document.getElementById('d-hist-tab').style.display = n===1 ? 'block' : 'none';
+  document.getElementById('d-prof-tab').style.display = n===2 ? 'block' : 'none';
+  if (n===1) renderDHistory();
+  if (n===2) updateAllUI();
+  if (n===0) updateDriverUI();
 }
 
 // ====================================
@@ -1853,9 +1268,7 @@ function dTab(n) {
 // ====================================
 function setupPassengerListeners() {
   if (STATE.activeOrderId) {
-    unsubOrders = onDocSnapshot('orders', STATE.activeOrderId, (order) => {
-      handleOrderUpdate(order);
-    });
+    unsubOrders = onDocSnapshot('orders', STATE.activeOrderId, handleOrderUpdate);
   }
   updateOnlineCount();
   setInterval(updateOnlineCount, 30000);
@@ -1863,136 +1276,112 @@ function setupPassengerListeners() {
 
 function handleOrderUpdate(order) {
   if (!order) return;
+  const show = (id) => {
+    ['p-new-order','p-searching','p-active-ride'].forEach(i => {
+      const el = document.getElementById(i); if(el) el.style.display = i===id ? 'block' : 'none';
+    });
+  };
   if (order.status === 'searching') {
-    document.getElementById('p-new-order').style.display = 'none';
-    document.getElementById('p-searching').style.display = 'block';
-    document.getElementById('p-active-ride').style.display = 'none';
-    renderOffers(order);
-    updateAob(order);
+    show('p-searching'); renderOffers(order); updateAob(order);
   } else if (['active','arrived','riding'].includes(order.status)) {
-    document.getElementById('p-new-order').style.display = 'none';
-    document.getElementById('p-searching').style.display = 'none';
-    document.getElementById('p-active-ride').style.display = 'block';
-    updateActiveRide(order);
+    show('p-active-ride'); updateActiveRide(order);
   } else if (order.status === 'done') {
-    STATE.activeOrderId = null;
-    saveState();
-    document.getElementById('p-new-order').style.display = 'block';
-    document.getElementById('p-searching').style.display = 'none';
-    document.getElementById('p-active-ride').style.display = 'none';
+    STATE.activeOrderId = null; saveState();
     if (unsubOrders) { unsubOrders(); unsubOrders = null; }
+    show('p-new-order');
     showToast('Поездка завершена!', 'ok');
     setTimeout(() => openRatingModal('driver', order.id), 700);
   } else if (order.status === 'cancelled') {
-    STATE.activeOrderId = null;
-    saveState();
-    document.getElementById('p-new-order').style.display = 'block';
-    document.getElementById('p-searching').style.display = 'none';
-    document.getElementById('p-active-ride').style.display = 'none';
+    STATE.activeOrderId = null; saveState();
     if (unsubOrders) { unsubOrders(); unsubOrders = null; }
+    show('p-new-order');
     showToast('Заказ отменён');
   }
 }
 
 function updateAob(order) {
-  document.getElementById('p-aob-route').textContent = `${order.from} → ${order.to}`;
-  document.getElementById('p-aob-meta').textContent = `${fmtPrice(order.price)}₸ · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}`;
+  const r = document.getElementById('p-aob-route');
+  const m = document.getElementById('p-aob-meta');
+  if(r) r.textContent = `${order.from} → ${order.to}`;
+  if(m) m.textContent = `${fmtPrice(order.price)}₸ · ${order.payMethod==='cash'?'Наличные':'Перевод'}`;
 }
 
 function renderOffers(order) {
   const list = document.getElementById('p-offers-list');
   const titleEl = document.getElementById('p-offers-title');
   const offers = order.offers || [];
-  if (offers.length === 0) {
-    titleEl.style.display = 'none';
-    list.innerHTML = '';
-    return;
-  }
-  titleEl.style.display = 'block';
+  if (!list) return;
+  if (!offers.length) { if(titleEl) titleEl.style.display='none'; list.innerHTML=''; return; }
+  if(titleEl) titleEl.style.display='block';
   list.innerHTML = offers.map(o => `
     <div class="offer-card">
       <div style="display:flex;align-items:center;gap:11px">
-        <div class="drv-av">${o.emoji || '🚗'}</div>
-        <div class="offer-info" style="flex:1">
-          <div class="offer-name">${o.name}</div>
-          <div class="offer-meta">
-            <div class="stars">⭐ ${fmtRating(o.rating)}</div>
-            <div class="offer-car">${o.car || ''}</div>
-          </div>
+        <div class="drv-av">${o.emoji||'🚗'}</div>
+        <div style="flex:1"><div class="offer-name">${o.name}</div>
+          <div class="offer-meta"><div class="stars">⭐ ${fmtRating(o.rating)}</div><div class="offer-car">${o.car||''}</div></div>
         </div>
-        <div style="text-align:right">
-          <div class="offer-price">${fmtPrice(o.price)}₸</div>
-          <div class="offer-eta">~${o.eta} мин</div>
-        </div>
+        <div style="text-align:right"><div class="offer-price">${fmtPrice(o.price)}₸</div><div class="offer-eta">~${o.eta} мин</div></div>
       </div>
       <div class="offer-acts">
         <button class="btn btn-green btn-sm" onclick="acceptOffer('${o.id}','${order.id}')">✓ Принять</button>
         <button class="btn btn-ghost btn-sm" onclick="declineOffer('${o.id}','${order.id}')">✗ Отклонить</button>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function updateActiveRide(order) {
-  document.getElementById('p-ride-route').textContent = `${order.from} → ${order.to}`;
+  const safeSet = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  safeSet('p-ride-route', `${order.from} → ${order.to}`);
   const drv = order.acceptedDriver;
   if (drv) {
-    document.getElementById('p-ride-drv-av').textContent = drv.emoji || '🚗';
-    document.getElementById('p-ride-drv-name').textContent = drv.name;
-    document.getElementById('p-ride-drv-car').textContent = drv.car || '';
-    document.getElementById('p-ride-drv-rating').textContent = fmtRating(drv.rating);
-    document.getElementById('p-ride-price').textContent = fmtPrice(drv.price) + '₸';
-    document.getElementById('p-ride-meta').textContent = `Водитель: ${drv.name}`;
+    const av = document.getElementById('p-ride-drv-av');
+    if(av) av.textContent = drv.emoji||'🚗';
+    safeSet('p-ride-drv-name', drv.name);
+    safeSet('p-ride-drv-car', drv.car||'');
+    safeSet('p-ride-drv-rating', fmtRating(drv.rating));
+    safeSet('p-ride-price', fmtPrice(drv.price)+'₸');
+    safeSet('p-ride-meta', `Водитель: ${drv.name}`);
   }
+  const alertEl = document.getElementById('p-arrival-alert');
+  const spillEl = document.getElementById('p-ride-spill');
+  const statusEl = document.getElementById('p-ride-status');
   if (order.status === 'arrived') {
-    document.getElementById('p-ride-status').textContent = '🚗 Водитель прибыл!';
-    document.getElementById('p-ride-spill').className = 'spill sp-arrived';
-    document.getElementById('p-arrival-alert').style.display = 'block';
-    document.getElementById('p-ride-eta').textContent = '✅ Ожидает вас';
+    if(statusEl) statusEl.textContent = '🚗 Водитель прибыл!';
+    if(spillEl) spillEl.className = 'spill sp-arrived';
+    if(alertEl) alertEl.style.display = 'block';
+    safeSet('p-ride-eta', '✅ Ожидает вас');
     startArrivalSound();
   } else if (order.status === 'riding') {
-    document.getElementById('p-ride-status').textContent = '🛣️ Поездка началась';
-    document.getElementById('p-ride-spill').className = 'spill sp-active';
-    document.getElementById('p-arrival-alert').style.display = 'none';
-    stopArrivalSound();
-    stopGeoTransmit();
+    if(statusEl) statusEl.textContent = '🛣️ Поездка началась';
+    if(spillEl) spillEl.className = 'spill sp-active';
+    if(alertEl) alertEl.style.display = 'none';
+    stopArrivalSound(); stopGeoTransmit();
   } else {
-    document.getElementById('p-arrival-alert').style.display = 'none';
-    const eta = drv ? drv.eta : '?';
-    document.getElementById('p-ride-eta').textContent = `~${eta} мин`;
-    // Start geo if enabled
+    if(alertEl) alertEl.style.display = 'none';
+    safeSet('p-ride-eta', drv ? `~${drv.eta} мин` : '');
     if (STATE.geoEnabled) startGeoTransmit(order.id);
   }
 }
 
 // ====================================
-// GEO LOCATION
+// GEO
 // ====================================
 function toggleGeo() {
   STATE.geoEnabled = !STATE.geoEnabled;
-  document.getElementById('geo-toggle').classList.toggle('on', STATE.geoEnabled);
+  const el = document.getElementById('geo-toggle');
+  if(el) el.classList.toggle('on', STATE.geoEnabled);
   saveState();
 }
 
 function startGeoTransmit(orderId) {
-  if (!STATE.geoEnabled || !orderId) return;
-  if (geoWatchId !== null) return;
-  if (!navigator.geolocation) return;
+  if (!STATE.geoEnabled || !orderId || geoWatchId !== null || !navigator.geolocation) return;
   geoWatchId = navigator.geolocation.watchPosition(pos => {
-    const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-    dbSet('orders', orderId, { passengerGeo: coords, geoUpdatedAt: new Date().toISOString() });
-  }, null, { enableHighAccuracy: true, timeout: 5000 });
+    dbSet('orders', orderId, {passengerGeo: {lat: pos.coords.latitude, lng: pos.coords.longitude}, geoUpdatedAt: new Date().toISOString()});
+  }, null, {enableHighAccuracy: true, timeout: 5000});
 }
 
 function stopGeoTransmit() {
-  if (geoWatchId !== null) {
-    navigator.geolocation.clearWatch(geoWatchId);
-    geoWatchId = null;
-  }
-  if (geoTransmitInterval) {
-    clearInterval(geoTransmitInterval);
-    geoTransmitInterval = null;
-  }
+  if (geoWatchId !== null) { navigator.geolocation.clearWatch(geoWatchId); geoWatchId = null; }
 }
 
 // ====================================
@@ -2003,27 +1392,19 @@ function startArrivalSound() {
   playBeep();
   arrivalSoundInterval = setInterval(playBeep, 2000);
 }
-
 function stopArrivalSound() {
-  if (arrivalSoundInterval) {
-    clearInterval(arrivalSoundInterval);
-    arrivalSoundInterval = null;
-  }
+  if (arrivalSoundInterval) { clearInterval(arrivalSoundInterval); arrivalSoundInterval = null; }
 }
-
 function playBeep() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.frequency.value = 880;
-    osc.type = 'sine';
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.frequency.value = 880; osc.type = 'sine';
     gain.gain.setValueAtTime(0.3, ctx.currentTime);
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.4);
-    osc.start(ctx.currentTime);
-    osc.stop(ctx.currentTime + 0.4);
+    osc.start(ctx.currentTime); osc.stop(ctx.currentTime + 0.4);
   } catch(e) {}
 }
 
@@ -2035,6 +1416,10 @@ async function createOrder() {
   if (!STATE.toAddr) { showToast('Укажите куда', 'err'); return; }
   const price = parseInt(document.getElementById('p-price').value);
   if (!price || price <= 0) { showToast('Укажите цену', 'err'); return; }
+
+  const btn = document.getElementById('btn-create-order');
+  btn.disabled = true;
+  showLoading(true);
 
   const orderId = 'ORD-' + Date.now();
   const order = {
@@ -2060,35 +1445,31 @@ async function createOrder() {
     createdAt: new Date().toISOString(),
   };
 
-  document.getElementById('btn-create-order').disabled = true;
-  await dbSet('orders', orderId, order);
-  STATE.activeOrderId = orderId;
-  saveState();
-
-  showToast('Заказ создан! Ищем водителя...', 'ok');
-  document.getElementById('btn-create-order').disabled = false;
-
-  // Subscribe to updates
-  if (unsubOrders) unsubOrders();
-  unsubOrders = onDocSnapshot('orders', orderId, handleOrderUpdate);
-
-  // Show search screen
-  document.getElementById('p-new-order').style.display = 'none';
-  document.getElementById('p-searching').style.display = 'block';
-  updateAob(order);
-
-  if (STATE.geoEnabled) startGeoTransmit(orderId);
-
-  try { tg.sendData(JSON.stringify({type: 'new_order', orderId})); } catch(e) {}
+  try {
+    await dbSet('orders', orderId, order);
+    STATE.activeOrderId = orderId;
+    saveState();
+    if (unsubOrders) unsubOrders();
+    unsubOrders = onDocSnapshot('orders', orderId, handleOrderUpdate);
+    document.getElementById('p-new-order').style.display = 'none';
+    document.getElementById('p-searching').style.display = 'block';
+    updateAob(order);
+    if (STATE.geoEnabled) startGeoTransmit(orderId);
+    showToast('Заказ создан! Ищем водителя...', 'ok');
+  } catch(e) {
+    console.error(e);
+    showToast('Ошибка создания заказа', 'err');
+  }
+  showLoading(false);
+  btn.disabled = false;
 }
 
 async function cancelOrder() {
   tg.showConfirm('Отменить заказ?', async (ok) => {
     if (!ok) return;
     if (STATE.activeOrderId) {
-      await dbSet('orders', STATE.activeOrderId, {status: 'cancelled', cancelledBy: 'passenger', cancelledAt: new Date().toISOString()});
-      STATE.activeOrderId = null;
-      saveState();
+      await dbSet('orders', STATE.activeOrderId, {status:'cancelled',cancelledBy:'passenger',cancelledAt:new Date().toISOString()});
+      STATE.activeOrderId = null; saveState();
       if (unsubOrders) { unsubOrders(); unsubOrders = null; }
       stopGeoTransmit();
     }
@@ -2101,15 +1482,9 @@ async function cancelOrder() {
 async function acceptOffer(offerId, orderId) {
   const order = await dbGet('orders', orderId);
   if (!order || order.status !== 'searching') { showToast('Заказ уже не актуален', 'warn'); return; }
-  const offer = (order.offers || []).find(o => o.id === offerId);
+  const offer = (order.offers||[]).find(o => o.id === offerId);
   if (!offer) return;
-
-  await dbSet('orders', orderId, {
-    status: 'active',
-    acceptedDriver: offer,
-    acceptedAt: new Date().toISOString(),
-    offers: [],
-  });
+  await dbSet('orders', orderId, {status:'active',acceptedDriver:offer,acceptedAt:new Date().toISOString(),offers:[]});
   showToast(`${offer.name} едет к вам! ~${offer.eta} мин`, 'ok');
   tg.HapticFeedback.notificationOccurred('success');
 }
@@ -2117,14 +1492,14 @@ async function acceptOffer(offerId, orderId) {
 async function declineOffer(offerId, orderId) {
   const order = await dbGet('orders', orderId);
   if (!order) return;
-  const newOffers = (order.offers || []).filter(o => o.id !== offerId);
-  await dbSet('orders', orderId, {offers: newOffers});
+  await dbSet('orders', orderId, {offers:(order.offers||[]).filter(o=>o.id!==offerId)});
   showToast('Предложение отклонено');
 }
 
 function passengerBoarded() {
   stopArrivalSound();
-  document.getElementById('p-arrival-alert').style.display = 'none';
+  const el = document.getElementById('p-arrival-alert');
+  if(el) el.style.display = 'none';
   showToast('Отлично! Приятной поездки 🚗', 'ok');
 }
 
@@ -2132,12 +1507,10 @@ async function passengerCancelRide() {
   tg.showConfirm('Отменить поездку?', async (ok) => {
     if (!ok) return;
     if (STATE.activeOrderId) {
-      await dbSet('orders', STATE.activeOrderId, {status: 'cancelled', cancelledBy: 'passenger', cancelledAt: new Date().toISOString()});
-      STATE.activeOrderId = null;
-      saveState();
+      await dbSet('orders', STATE.activeOrderId, {status:'cancelled',cancelledBy:'passenger',cancelledAt:new Date().toISOString()});
+      STATE.activeOrderId = null; saveState();
       if (unsubOrders) { unsubOrders(); unsubOrders = null; }
-      stopArrivalSound();
-      stopGeoTransmit();
+      stopArrivalSound(); stopGeoTransmit();
     }
     document.getElementById('p-active-ride').style.display = 'none';
     document.getElementById('p-new-order').style.display = 'block';
@@ -2149,65 +1522,55 @@ async function passengerCancelRide() {
 // DRIVER LISTENERS & ORDERS
 // ====================================
 function setupDriverListeners() {
-  if (!STATE.user) return;
   updateDriverUI();
-  if (STATE.shiftActive && !STATE.driverActiveOrderId) {
-    startListeningOrders();
-  }
-  if (STATE.driverActiveOrderId) {
-    startListeningActiveOrder();
-  }
+  if (STATE.shiftActive && !STATE.driverActiveOrderId) startListeningOrders();
+  if (STATE.driverActiveOrderId) startListeningActiveOrder();
 }
 
 function startListeningOrders() {
   if (unsubOrders) return;
   const mode = STATE.user.driverMode || 'city';
-  unsubOrders = onSnapshot('orders', 'status', '==', 'searching', (orders) => {
-    const cityOrders = orders.filter(o => {
+  unsubOrders = onSnapshotQuery('orders', 'status', '==', 'searching', (orders) => {
+    const filtered = orders.filter(o => {
       if (o.city !== STATE.user.city) return false;
       if (mode === 'intercity') return o.type === 'intercity';
       return o.type !== 'intercity';
     });
-    renderDriverOrders(cityOrders);
+    renderDriverOrders(filtered);
   });
 }
 
-function stopListeningOrders() {
-  if (unsubOrders) { unsubOrders(); unsubOrders = null; }
-}
+function stopListeningOrders() { if (unsubOrders) { unsubOrders(); unsubOrders = null; } }
 
 function startListeningActiveOrder() {
   if (!STATE.driverActiveOrderId) return;
   if (unsubOrders) unsubOrders();
-  unsubOrders = onDocSnapshot('orders', STATE.driverActiveOrderId, (order) => {
-    handleDriverOrderUpdate(order);
-  });
+  unsubOrders = onDocSnapshot('orders', STATE.driverActiveOrderId, handleDriverOrderUpdate);
 }
 
 function handleDriverOrderUpdate(order) {
   if (!order) return;
   if (order.status === 'cancelled') {
-    STATE.driverActiveOrderId = null;
-    saveState();
-    document.getElementById('d-active-order').style.display = 'none';
-    updateDriverUI();
-    startListeningOrders();
+    STATE.driverActiveOrderId = null; saveState();
+    const el = document.getElementById('d-active-order');
+    if(el) el.style.display = 'none';
+    updateDriverUI(); startListeningOrders();
     showToast('Пассажир отменил поездку', 'warn');
-    tg.HapticFeedback.notificationOccurred('error');
   } else {
     renderActiveDriverOrder(order);
-    // Show geo if passenger transmits
     if (order.geoEnabled && order.passengerGeo) {
-      document.getElementById('d-geo-indicator').style.display = 'block';
-      const g = order.passengerGeo;
-      document.getElementById('d-geo-coords').textContent = `${g.lat.toFixed(5)}, ${g.lng.toFixed(5)}`;
+      const ind = document.getElementById('d-geo-indicator');
+      if(ind) ind.style.display = 'block';
+      const coords = document.getElementById('d-geo-coords');
+      if(coords) coords.textContent = `${order.passengerGeo.lat.toFixed(5)}, ${order.passengerGeo.lng.toFixed(5)}`;
     }
   }
 }
 
 function renderDriverOrders(orders) {
   const list = document.getElementById('d-orders-list');
-  if (!orders || orders.length === 0) {
+  if (!list) return;
+  if (!orders || !orders.length) {
     list.innerHTML = '<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">Нет заказов. Обновляется автоматически.</div></div>';
     return;
   }
@@ -2218,187 +1581,133 @@ function renderDriverOrders(orders) {
         <div class="stars">⭐ <span style="font-size:12px;color:var(--text2)">${fmtRating(o.passengerRating)} пасс.</span></div>
       </div>
       <div class="ord-route">
-        <div class="ord-rrow">
-          <div class="ord-rdot rdot-a"></div>
-          <div class="ord-rtxt"><strong>${o.from}</strong>${o.fromEntrance ? ' · Подъезд ' + o.fromEntrance : ''}</div>
-        </div>
-        <div class="ord-rrow">
-          <div class="ord-rdot rdot-b"></div>
-          <div class="ord-rtxt"><strong>${o.to}</strong>${o.toEntrance ? ' · Подъезд ' + o.toEntrance : ''}</div>
-        </div>
+        <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt"><strong>${o.from}</strong>${o.fromEntrance?' · Подъезд '+o.fromEntrance:''}</div></div>
+        <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt"><strong>${o.to}</strong>${o.toEntrance?' · Подъезд '+o.toEntrance:''}</div></div>
       </div>
       <div class="ord-tags">
-        <span class="tag">${o.payMethod === 'cash' ? '💵 Нал.' : '📲 Перевод'}</span>
-        ${o.pax > 1 ? `<span class="tag">👥 ${o.pax}</span>` : ''}
-        ${o.childSeat ? '<span class="tag">👶</span>' : ''}
-        ${o.geoEnabled ? '<span class="tag tag-g">📍 Гео</span>' : ''}
-        ${o.comment ? `<span class="tag">💬</span>` : ''}
+        <span class="tag">${o.payMethod==='cash'?'💵 Нал.':'📲 Перевод'}</span>
+        ${o.pax>1?`<span class="tag">👥 ${o.pax}</span>`:''}
+        ${o.childSeat?'<span class="tag">👶</span>':''}
+        ${o.geoEnabled?'<span class="tag tag-g">📍 Гео</span>':''}
+        ${o.comment?'<span class="tag">💬</span>':''}
       </div>
       <div class="ord-bot">
-        <div>
-          <div style="font-size:10px;color:var(--text3)">Цена пассажира</div>
-          <div class="offer-price">${fmtPrice(o.price)}₸</div>
-        </div>
+        <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtPrice(o.price)}₸</div></div>
         <div style="display:flex;gap:7px">
           <button class="btn btn-ghost btn-sm" onclick="openDrvOffer('${o.id}',${o.price})">Торговаться</button>
           <button class="btn btn-y btn-sm" onclick="drvAcceptOrder('${o.id}',${o.price},10)">Принять</button>
         </div>
       </div>
-    </div>
-  `).join('');
+    </div>`).join('');
 }
 
 function renderActiveDriverOrder(order) {
-  document.getElementById('d-act-route').textContent = `${order.from} → ${order.to}`;
-  document.getElementById('d-act-meta').textContent = `${fmtPrice(order.acceptedPrice || order.price)}₸ · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}${order.comment ? ' · ' + order.comment : ''}`;
-  document.getElementById('d-act-pname').textContent = order.passengerName || '—';
-  document.getElementById('d-act-pphone').textContent = order.passengerPhone || '—';
-  document.getElementById('d-act-prating').textContent = fmtRating(order.passengerRating);
-  document.getElementById('d-act-price').textContent = fmtPrice(order.acceptedPrice || order.price) + '₸';
-
-  // Button states
+  const safeSet = (id, v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
+  safeSet('d-act-route', `${order.from} → ${order.to}`);
+  safeSet('d-act-meta', `${fmtPrice(order.acceptedPrice||order.price)}₸ · ${order.payMethod==='cash'?'Наличные':'Перевод'}${order.comment?' · '+order.comment:''}`);
+  safeSet('d-act-pname', order.passengerName||'—');
+  safeSet('d-act-pphone', order.passengerPhone||'—');
+  safeSet('d-act-prating', fmtRating(order.passengerRating));
+  safeSet('d-act-price', fmtPrice(order.acceptedPrice||order.price)+'₸');
   const arrBtn = document.getElementById('btn-arrived');
   const startBtn = document.getElementById('btn-start-ride');
   const finishBtn = document.getElementById('btn-finish-ride');
-
   if (order.status === 'arrived') {
-    arrBtn.disabled = true; arrBtn.textContent = '✅ Прибыл';
-    startBtn.disabled = false;
+    if(arrBtn){arrBtn.disabled=true;arrBtn.textContent='✅ Прибыл';}
+    if(startBtn) startBtn.disabled=false;
   } else if (order.status === 'riding') {
-    arrBtn.disabled = true; arrBtn.textContent = '✅ Прибыл';
-    startBtn.disabled = true;
-    finishBtn.style.display = 'block';
+    if(arrBtn){arrBtn.disabled=true;arrBtn.textContent='✅ Прибыл';}
+    if(startBtn) startBtn.disabled=true;
+    if(finishBtn) finishBtn.style.display='block';
   }
 }
 
 function openDrvOffer(orderId, passengerPrice) {
   STATE.currentOfferOrderId = orderId;
-  document.getElementById('doi-pprice').textContent = fmtPrice(passengerPrice) + '₸';
-  document.getElementById('doi-price').value = passengerPrice;
-  document.getElementById('doi-eta').value = '10';
+  const pp = document.getElementById('doi-pprice');
+  const dp = document.getElementById('doi-price');
+  const de = document.getElementById('doi-eta');
+  if(pp) pp.textContent = fmtPrice(passengerPrice)+'₸';
+  if(dp) dp.value = passengerPrice;
+  if(de) de.value = '10';
   openModal('mo-drv-offer');
 }
 
 async function submitOffer() {
   const price = parseInt(document.getElementById('doi-price').value);
   const eta = parseInt(document.getElementById('doi-eta').value);
-  if (!price || price <= 0) { showToast('Укажите цену', 'err'); return; }
-  if (!eta || eta < 1) { showToast('Укажите время', 'err'); return; }
-
+  if (!price||price<=0) { showToast('Укажите цену','err'); return; }
+  if (!eta||eta<1) { showToast('Укажите время','err'); return; }
   const order = await dbGet('orders', STATE.currentOfferOrderId);
-  if (!order || order.status !== 'searching') { showToast('Заказ уже занят', 'warn'); closeModal('mo-drv-offer'); return; }
-
-  const offer = {
-    id: 'OFF-' + Date.now(),
-    driverId: STATE.user.tgId,
-    name: STATE.user.name,
-    car: STATE.user.car ? `${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
-    emoji: '🚗',
-    rating: STATE.user.rating,
-    price, eta,
-  };
-  const newOffers = [...(order.offers || []).filter(o => o.driverId !== STATE.user.tgId), offer];
-  await dbSet('orders', STATE.currentOfferOrderId, {offers: newOffers});
+  if (!order||order.status!=='searching') { showToast('Заказ уже занят','warn'); closeModal('mo-drv-offer'); return; }
+  const offer = {id:'OFF-'+Date.now(),driverId:STATE.user.tgId,name:STATE.user.name,car:STATE.user.car?`${STATE.user.car.brand} · ${STATE.user.car.num}`:'',emoji:'🚗',rating:STATE.user.rating,price,eta};
+  const newOffers = [...(order.offers||[]).filter(o=>o.driverId!==STATE.user.tgId), offer];
+  await dbSet('orders', STATE.currentOfferOrderId, {offers:newOffers});
   closeModal('mo-drv-offer');
   showToast('Предложение отправлено!', 'ok');
 }
 
 async function drvAcceptOrder(orderId, price, eta) {
-  // Check if order is still available
   const order = await dbGet('orders', orderId);
-  if (!order || order.status !== 'searching') { showToast('Заказ уже занят', 'warn'); return; }
-  // Check if driver already has active order
-  if (STATE.driverActiveOrderId) { showToast('У вас уже есть активный заказ', 'warn'); return; }
-
-  const offer = {
-    id: 'OFF-self-' + Date.now(),
-    driverId: STATE.user.tgId,
-    name: STATE.user.name,
-    car: STATE.user.car ? `${STATE.user.car.color} ${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
-    emoji: '🚗',
-    rating: STATE.user.rating,
-    price, eta,
-  };
-
-  await dbSet('orders', orderId, {
-    status: 'active',
-    acceptedDriver: offer,
-    acceptedPrice: price,
-    acceptedAt: new Date().toISOString(),
-    offers: [],
-  });
-
-  STATE.driverActiveOrderId = orderId;
-  saveState();
-  stopListeningOrders();
-  startListeningActiveOrder();
-
-  // Update shift
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', {hasActiveOrder: true});
-
-  document.getElementById('d-online-box').style.display = 'none';
-  document.getElementById('d-active-order').style.display = 'block';
-  renderActiveDriverOrder({...order, acceptedDriver: offer, status: 'active', acceptedPrice: price});
+  if (!order||order.status!=='searching') { showToast('Заказ уже занят','warn'); return; }
+  if (STATE.driverActiveOrderId) { showToast('У вас уже есть активный заказ','warn'); return; }
+  const offer = {id:'OFF-self-'+Date.now(),driverId:STATE.user.tgId,name:STATE.user.name,car:STATE.user.car?`${STATE.user.car.color} ${STATE.user.car.brand} · ${STATE.user.car.num}`:'',emoji:'🚗',rating:STATE.user.rating,price,eta};
+  await dbSet('orders', orderId, {status:'active',acceptedDriver:offer,acceptedPrice:price,acceptedAt:new Date().toISOString(),offers:[]});
+  STATE.driverActiveOrderId = orderId; saveState();
+  stopListeningOrders(); startListeningActiveOrder();
+  await dbSet('driver_shifts', STATE.user.tgId+'_shift', {hasActiveOrder:true});
+  const onEl = document.getElementById('d-online-box');
+  const actEl = document.getElementById('d-active-order');
+  if(onEl) onEl.style.display='none';
+  if(actEl) actEl.style.display='block';
+  renderActiveDriverOrder({...order,acceptedDriver:offer,status:'active',acceptedPrice:price});
   showToast('Заказ принят!', 'ok');
 }
 
 async function driverArrived() {
   if (!STATE.driverActiveOrderId) return;
-  await dbSet('orders', STATE.driverActiveOrderId, {status: 'arrived', arrivedAt: new Date().toISOString()});
-  document.getElementById('btn-arrived').disabled = true;
-  document.getElementById('btn-arrived').textContent = '✅ Прибыл';
-  document.getElementById('btn-start-ride').disabled = false;
+  await dbSet('orders', STATE.driverActiveOrderId, {status:'arrived',arrivedAt:new Date().toISOString()});
+  const arr = document.getElementById('btn-arrived');
+  const start = document.getElementById('btn-start-ride');
+  if(arr){arr.disabled=true;arr.textContent='✅ Прибыл';}
+  if(start) start.disabled=false;
   showToast('Пассажир уведомлён!', 'ok');
   tg.HapticFeedback.impactOccurred('medium');
 }
 
 async function startRide() {
   if (!STATE.driverActiveOrderId) return;
-  await dbSet('orders', STATE.driverActiveOrderId, {status: 'riding', startedAt: new Date().toISOString()});
-  document.getElementById('btn-start-ride').disabled = true;
-  document.getElementById('btn-finish-ride').style.display = 'block';
+  await dbSet('orders', STATE.driverActiveOrderId, {status:'riding',startedAt:new Date().toISOString()});
+  const start = document.getElementById('btn-start-ride');
+  const finish = document.getElementById('btn-finish-ride');
+  if(start) start.disabled=true;
+  if(finish) finish.style.display='block';
   showToast('Поездка началась!', 'ok');
 }
 
 async function finishRide() {
   if (!STATE.driverActiveOrderId) return;
   const orderId = STATE.driverActiveOrderId;
-
-  await dbSet('orders', orderId, {status: 'done', finishedAt: new Date().toISOString()});
-
-  // Update stats
-  STATE.user.trips = (STATE.user.trips || 0) + 1;
-  STATE.shiftTrips = (STATE.shiftTrips || 0) + 1;
-  STATE.user.bonusTrips = (STATE.user.bonusTrips || 0) + 1;
-
-  // Check bonus
+  showLoading(true);
+  await dbSet('orders', orderId, {status:'done',finishedAt:new Date().toISOString()});
+  STATE.user.trips = (STATE.user.trips||0)+1;
+  STATE.shiftTrips = (STATE.shiftTrips||0)+1;
+  STATE.user.bonusTrips = (STATE.user.bonusTrips||0)+1;
   if (STATE.user.bonusTrips >= BONUS_TRIPS_PER_SHIFT && STATE.bonusSystemEnabled) {
-    STATE.user.bonusTrips = 0;
-    STATE.user.nextShiftFree = true;
+    STATE.user.bonusTrips=0; STATE.user.nextShiftFree=true;
     showToast('🎉 Следующая смена бесплатная!', 'ok');
   }
-
-  // Update avg
-  const prevShifts = STATE.user.totalShifts || 1;
-  const prevAvg = STATE.user.avgShiftTrips || 0;
-  STATE.user.avgShiftTrips = ((prevAvg * prevShifts) + STATE.shiftTrips) / (prevShifts + 1);
-
-  await dbSet('users', STATE.user.tgId, {
-    trips: STATE.user.trips,
-    bonusTrips: STATE.user.bonusTrips,
-    avgShiftTrips: STATE.user.avgShiftTrips,
-    nextShiftFree: STATE.user.nextShiftFree || false,
-  });
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', {hasActiveOrder: false});
-
-  STATE.driverActiveOrderId = null;
-  saveState();
-  if (unsubOrders) { unsubOrders(); unsubOrders = null; }
-
-  document.getElementById('d-active-order').style.display = 'none';
-  updateDriverUI();
-  startListeningOrders();
-
+  const prevShifts = STATE.user.totalShifts||1;
+  const prevAvg = STATE.user.avgShiftTrips||0;
+  STATE.user.avgShiftTrips = ((prevAvg*prevShifts)+STATE.shiftTrips)/(prevShifts+1);
+  await dbSet('users', STATE.user.tgId, {trips:STATE.user.trips,bonusTrips:STATE.user.bonusTrips,avgShiftTrips:STATE.user.avgShiftTrips,nextShiftFree:STATE.user.nextShiftFree||false});
+  await dbSet('driver_shifts', STATE.user.tgId+'_shift', {hasActiveOrder:false});
+  STATE.driverActiveOrderId=null; saveState();
+  if (unsubOrders){unsubOrders();unsubOrders=null;}
+  const actEl = document.getElementById('d-active-order');
+  if(actEl) actEl.style.display='none';
+  showLoading(false);
+  updateDriverUI(); startListeningOrders();
   showToast('Поездка завершена! Спасибо!', 'ok');
   setTimeout(() => openRatingModal('passenger', orderId), 700);
 }
@@ -2407,118 +1716,75 @@ async function driverCancelRide() {
   tg.showConfirm('Отменить поездку?', async (ok) => {
     if (!ok) return;
     if (STATE.driverActiveOrderId) {
-      await dbSet('orders', STATE.driverActiveOrderId, {status: 'cancelled', cancelledBy: 'driver', cancelledAt: new Date().toISOString()});
-      await dbSet('driver_shifts', STATE.user.tgId + '_shift', {hasActiveOrder: false});
-      STATE.driverActiveOrderId = null;
-      saveState();
-      if (unsubOrders) { unsubOrders(); unsubOrders = null; }
+      await dbSet('orders', STATE.driverActiveOrderId, {status:'cancelled',cancelledBy:'driver',cancelledAt:new Date().toISOString()});
+      await dbSet('driver_shifts', STATE.user.tgId+'_shift', {hasActiveOrder:false});
+      STATE.driverActiveOrderId=null; saveState();
+      if (unsubOrders){unsubOrders();unsubOrders=null;}
     }
-    document.getElementById('d-active-order').style.display = 'none';
-    updateDriverUI();
-    startListeningOrders();
+    const actEl = document.getElementById('d-active-order');
+    if(actEl) actEl.style.display='none';
+    updateDriverUI(); startListeningOrders();
     showToast('Поездка отменена');
   });
 }
 
 // ====================================
-// DRIVER SHIFT MANAGEMENT
+// DRIVER SHIFT
 // ====================================
 async function goOnline() {
-  if (!STATE.user.approved) { showToast('Аккаунт не подтверждён', 'warn'); return; }
-
-  // Check payment
+  if (!STATE.user.approved) { showToast('Аккаунт не подтверждён','warn'); return; }
   const freeUntil = STATE.user.freeUntil ? new Date(STATE.user.freeUntil) : null;
-  const now = new Date();
-  const isFree = freeUntil && freeUntil > now;
+  const isFree = freeUntil && freeUntil > new Date();
   const isNextFree = STATE.user.nextShiftFree;
-
   if (!isFree && !isNextFree) {
-    // Check if today already paid
     const today = new Date().toDateString();
-    if (STATE.paidToday !== today) {
-      openTonPayment();
-      return;
-    }
+    if (STATE.paidToday !== today) { openTonPayment(); return; }
   }
-
-  if (isNextFree) {
-    STATE.user.nextShiftFree = false;
-    await dbSet('users', STATE.user.tgId, {nextShiftFree: false});
-  }
-
-  // Calculate shift end
+  if (isNextFree) { STATE.user.nextShiftFree=false; await dbSet('users',STATE.user.tgId,{nextShiftFree:false}); }
   const hour = new Date().getHours();
-  const shiftUntil = hour >= 16
-    ? new Date(Date.now() + 12 * 3600 * 1000)
-    : new Date(new Date().setHours(23, 59, 59, 999));
-
-  STATE.shiftActive = true;
-  STATE.shiftUntil = shiftUntil.toISOString();
-  STATE.shiftTrips = 0;
-  saveState();
-
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', {
-    driverId: STATE.user.tgId,
-    driverName: STATE.user.name,
-    city: STATE.user.city,
-    mode: STATE.driverMode,
-    active: true,
-    until: STATE.shiftUntil,
-    hasActiveOrder: false,
-    startedAt: new Date().toISOString(),
-  });
-
-  // Auto end shift
-  const msLeft = shiftUntil - Date.now();
-  setTimeout(autoEndShift, msLeft);
-
-  document.getElementById('d-offline-box').style.display = 'none';
-  document.getElementById('d-online-box').style.display = 'block';
-  updateDriverUI();
-  startListeningOrders();
+  const shiftUntil = hour>=16 ? new Date(Date.now()+12*3600*1000) : new Date(new Date().setHours(23,59,59,999));
+  STATE.shiftActive=true; STATE.shiftUntil=shiftUntil.toISOString(); STATE.shiftTrips=0; saveState();
+  await dbSet('driver_shifts', STATE.user.tgId+'_shift', {driverId:STATE.user.tgId,driverName:STATE.user.name,city:STATE.user.city,mode:STATE.driverMode,active:true,until:STATE.shiftUntil,hasActiveOrder:false,startedAt:new Date().toISOString()});
+  setTimeout(autoEndShift, shiftUntil-Date.now());
+  const offEl=document.getElementById('d-offline-box');
+  const onEl=document.getElementById('d-online-box');
+  if(offEl) offEl.style.display='none';
+  if(onEl) onEl.style.display='block';
+  updateDriverUI(); startListeningOrders();
   showToast('Вы на линии 🟢', 'ok');
 }
 
 async function goOffline() {
-  tg.showConfirm('Завершить смену?', async (ok) => {
-    if (!ok) return;
-    await endShift();
-  });
+  tg.showConfirm('Завершить смену?', async (ok) => { if(ok) await endShift(); });
 }
 
 async function autoEndShift() {
   if (!STATE.shiftActive) return;
-  await endShift();
-  showToast('Смена завершена (время вышло)');
+  await endShift(); showToast('Смена завершена (время вышло)');
 }
 
 async function endShift() {
-  STATE.shiftActive = false;
-  const prevShifts = STATE.user.totalShifts || 0;
-  STATE.user.totalShifts = prevShifts + 1;
-  const prevAvg = STATE.user.avgShiftTrips || 0;
-  STATE.user.avgShiftTrips = ((prevAvg * prevShifts) + (STATE.shiftTrips || 0)) / (STATE.user.totalShifts);
+  STATE.shiftActive=false;
+  const prevShifts=STATE.user.totalShifts||0;
+  STATE.user.totalShifts=prevShifts+1;
+  STATE.user.avgShiftTrips=((STATE.user.avgShiftTrips||0)*prevShifts+(STATE.shiftTrips||0))/STATE.user.totalShifts;
   saveState();
-
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', {active: false, endedAt: new Date().toISOString()});
-  await dbSet('users', STATE.user.tgId, {
-    totalShifts: STATE.user.totalShifts,
-    avgShiftTrips: STATE.user.avgShiftTrips,
-  });
-
+  await dbSet('driver_shifts',STATE.user.tgId+'_shift',{active:false,endedAt:new Date().toISOString()});
+  await dbSet('users',STATE.user.tgId,{totalShifts:STATE.user.totalShifts,avgShiftTrips:STATE.user.avgShiftTrips});
   stopListeningOrders();
-  document.getElementById('d-online-box').style.display = 'none';
-  document.getElementById('d-offline-box').style.display = 'block';
-  updateDriverUI();
-  showToast('Смена завершена', 'ok');
+  const offEl=document.getElementById('d-offline-box');
+  const onEl=document.getElementById('d-online-box');
+  if(offEl) offEl.style.display='block';
+  if(onEl) onEl.style.display='none';
+  updateDriverUI(); showToast('Смена завершена','ok');
 }
 
 function selDrvMode(mode) {
-  STATE.driverMode = mode;
-  if (STATE.user) STATE.user.driverMode = mode;
+  STATE.driverMode=mode;
+  if(STATE.user) STATE.user.driverMode=mode;
   saveState();
-  document.getElementById('d-mode-city').classList.toggle('on', mode === 'city');
-  document.getElementById('d-mode-ic').classList.toggle('on', mode === 'intercity');
+  document.getElementById('d-mode-city').classList.toggle('on',mode==='city');
+  document.getElementById('d-mode-ic').classList.toggle('on',mode==='intercity');
 }
 
 // ====================================
@@ -2526,44 +1792,19 @@ function selDrvMode(mode) {
 // ====================================
 function openTonPayment() {
   openModal('mo-ton');
-  // TON Connect integration
-  try {
-    if (window.TON_CONNECT_UI) return;
-    const wrap = document.getElementById('ton-connect-wrap');
-    wrap.innerHTML = `
-      <div style="background:var(--bg3);border-radius:var(--r2);padding:14px;text-align:center">
-        <div style="font-size:13px;color:var(--text2);margin-bottom:10px">
-          Отправьте <strong style="color:var(--y)">${calcTonAmount()}</strong> TON на адрес:
-        </div>
-        <div style="font-size:11px;color:var(--text3);word-break:break-all;padding:8px;background:var(--bg4);border-radius:8px;margin-bottom:10px" id="ton-addr">
-          Загрузка адреса...
-        </div>
-        <button class="btn btn-blue btn-sm" onclick="simulateTonPayment()">✓ Я оплатил (тест)</button>
-      </div>`;
-    // In production: init TonConnect here
-    loadTonAddress();
-  } catch(e) {
-    console.log('TON init', e);
-  }
-}
-
-function calcTonAmount() {
-  // 500 KZT to TON - simplified, in prod fetch from API
-  return '~0.09 TON';
-}
-
-async function loadTonAddress() {
-  const el = document.getElementById('ton-addr');
-  if (el) el.textContent = 'UQD...YOUR_TON_WALLET_ADDRESS'; // Replace with real address
+  const wrap=document.getElementById('ton-connect-wrap');
+  if(wrap) wrap.innerHTML=`
+    <div style="background:var(--bg3);border-radius:var(--r2);padding:14px;text-align:center">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px">Отправьте <strong style="color:var(--y)">~0.09 TON</strong> на адрес:</div>
+      <div style="font-size:11px;color:var(--text3);word-break:break-all;padding:8px;background:var(--bg4);border-radius:8px;margin-bottom:10px">UQD...YOUR_TON_WALLET</div>
+      <button class="btn btn-blue btn-sm" onclick="simulateTonPayment()">✓ Я оплатил (тест)</button>
+    </div>`;
 }
 
 async function simulateTonPayment() {
-  // For testing only - in production verify payment on-chain
-  const today = new Date().toDateString();
-  STATE.paidToday = today;
-  saveState();
+  STATE.paidToday=new Date().toDateString(); saveState();
   closeModal('mo-ton');
-  showToast('Оплата принята! (тест)', 'ok');
+  showToast('Оплата принята! (тест)','ok');
   await goOnline();
 }
 
@@ -2571,587 +1812,339 @@ async function simulateTonPayment() {
 // RATING
 // ====================================
 function openRatingModal(ratingFor, orderId) {
-  STATE.ratingFor = ratingFor;
-  STATE.ratingOrderId = orderId;
-  STATE.currentRating = 0;
-  document.getElementById('rating-title').textContent = ratingFor === 'driver' ? 'Оцените водителя' : 'Оцените пассажира';
-  document.getElementById('rating-sub').textContent = ratingFor === 'driver' ? 'Как вам водитель?' : 'Как вам пассажир?';
-  document.querySelectorAll('.sbtn').forEach(b => b.classList.remove('lit'));
-  document.getElementById('rating-comment').value = '';
-  document.getElementById('complaint-check').checked = false;
-  document.getElementById('complaint-wrap').style.display = 'none';
+  STATE.ratingFor=ratingFor; STATE.ratingOrderId=orderId; STATE.currentRating=0;
+  const title=document.getElementById('rating-title');
+  const sub=document.getElementById('rating-sub');
+  if(title) title.textContent=ratingFor==='driver'?'Оцените водителя':'Оцените пассажира';
+  if(sub) sub.textContent=ratingFor==='driver'?'Как вам водитель?':'Как вам пассажир?';
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.remove('lit'));
+  const rc=document.getElementById('rating-comment'); if(rc) rc.value='';
+  const cc=document.getElementById('complaint-check'); if(cc) cc.checked=false;
+  const cw=document.getElementById('complaint-wrap'); if(cw) cw.style.display='none';
   openModal('mo-rating');
 }
 
 function setStar(v) {
-  STATE.currentRating = v;
-  document.querySelectorAll('.sbtn').forEach(b => b.classList.toggle('lit', parseInt(b.dataset.v) <= v));
+  STATE.currentRating=v;
+  document.querySelectorAll('.sbtn').forEach(b=>b.classList.toggle('lit',parseInt(b.dataset.v)<=v));
 }
 
 async function submitRating() {
-  if (!STATE.currentRating) { showToast('Поставьте оценку', 'err'); return; }
-  const comment = document.getElementById('rating-comment').value.trim();
-  const hasComplaint = document.getElementById('complaint-check').checked;
-  const complaint = hasComplaint ? document.getElementById('complaint-text').value.trim() : '';
-
-  const ratingId = 'RAT-' + Date.now();
-  await dbSet('ratings', ratingId, {
-    orderId: STATE.ratingOrderId,
-    ratingFor: STATE.ratingFor,
-    stars: STATE.currentRating,
-    comment, complaint,
-    by: STATE.user.tgId,
-    createdAt: new Date().toISOString(),
-  });
-
-  // Update rated user's rating in DB
-  const order = await dbGet('orders', STATE.ratingOrderId);
-  if (order) {
-    if (STATE.ratingFor === 'driver' && order.acceptedDriver) {
-      const drvUser = await dbGet('users', order.acceptedDriver.driverId);
+  if (!STATE.currentRating) { showToast('Поставьте оценку','err'); return; }
+  const comment=document.getElementById('rating-comment').value.trim();
+  const hasComplaint=document.getElementById('complaint-check').checked;
+  const complaint=hasComplaint?document.getElementById('complaint-text').value.trim():'';
+  await dbSet('ratings','RAT-'+Date.now(),{orderId:STATE.ratingOrderId,ratingFor:STATE.ratingFor,stars:STATE.currentRating,comment,complaint,by:STATE.user.tgId,createdAt:new Date().toISOString()});
+  try {
+    const order=await dbGet('orders',STATE.ratingOrderId);
+    if (order && STATE.ratingFor==='driver' && order.acceptedDriver) {
+      const drvUser=await dbGet('users',order.acceptedDriver.driverId);
       if (drvUser) {
-        const newCount = (drvUser.ratingCount || 0) + 1;
-        const newRating = ((drvUser.rating || 5) * (newCount - 1) + STATE.currentRating) / newCount;
-        await dbSet('users', order.acceptedDriver.driverId, {rating: newRating, ratingCount: newCount});
+        const nc=(drvUser.ratingCount||0)+1;
+        await dbSet('users',order.acceptedDriver.driverId,{rating:((drvUser.rating||5)*(nc-1)+STATE.currentRating)/nc,ratingCount:nc});
       }
-    } else if (STATE.ratingFor === 'passenger') {
-      const pUser = await dbGet('users', order.passengerId);
+    } else if (order && STATE.ratingFor==='passenger') {
+      const pUser=await dbGet('users',order.passengerId);
       if (pUser) {
-        const newCount = (pUser.ratingCount || 0) + 1;
-        const newRating = ((pUser.rating || 5) * (newCount - 1) + STATE.currentRating) / newCount;
-        await dbSet('users', order.passengerId, {rating: newRating, ratingCount: newCount});
+        const nc=(pUser.ratingCount||0)+1;
+        await dbSet('users',order.passengerId,{rating:((pUser.rating||5)*(nc-1)+STATE.currentRating)/nc,ratingCount:nc});
       }
     }
-  }
-
+  } catch(e){}
   closeModal('mo-rating');
-  showToast('Спасибо за оценку!', 'ok');
-  if (STATE.role === 'passenger') updatePassengerUI();
+  showToast('Спасибо за оценку!','ok');
 }
-
-function updatePassengerUI() { updateAllUI(); }
 
 // ====================================
 // HISTORY
 // ====================================
 async function renderPHistory() {
-  const list = document.getElementById('p-hist-list');
-  list.innerHTML = '<div class="empty-st"><div class="empty-ico">⏳</div><div class="empty-txt">Загрузка...</div></div>';
-  const orders = await dbQuery('orders', 'passengerId', '==', STATE.user.tgId);
-  const done = orders.filter(o => ['done','cancelled'].includes(o.status)).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-  if (!done.length) {
-    list.innerHTML = '<div class="empty-st"><div class="empty-ico">📋</div><div class="empty-txt">Поездок пока нет</div></div>';
-    return;
-  }
-  list.innerHTML = done.map(o => `
-    <div class="hist-card">
-      <div class="hist-hdr">
-        <div class="hist-date">${fmtDate(o.createdAt)}</div>
-        <div class="hist-price">${fmtPrice(o.acceptedDriver?.price || o.price)}₸</div>
-      </div>
-      <div class="hist-route">${o.from} → ${o.to}</div>
-      ${o.status==='done' ? '<span class="hist-b hb-ok">✓ Завершена</span>' : '<span class="hist-b hb-cx">✗ Отменена</span>'}
-    </div>
-  `).join('');
+  const list=document.getElementById('p-hist-list');
+  if(!list) return;
+  list.innerHTML='<div class="empty-st"><div class="empty-ico">⏳</div><div class="empty-txt">Загрузка...</div></div>';
+  try {
+    const orders=await dbQuery('orders','passengerId','==',STATE.user.tgId);
+    const done=orders.filter(o=>['done','cancelled'].includes(o.status)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    if (!done.length) { list.innerHTML='<div class="empty-st"><div class="empty-ico">📋</div><div class="empty-txt">Поездок пока нет</div></div>'; return; }
+    list.innerHTML=done.map(o=>`<div class="hist-card"><div class="hist-hdr"><div class="hist-date">${fmtDate(o.createdAt)}</div><div class="hist-price">${fmtPrice(o.acceptedDriver?.price||o.price)}₸</div></div><div class="hist-route">${o.from} → ${o.to}</div>${o.status==='done'?'<span class="hist-b hb-ok">✓ Завершена</span>':'<span class="hist-b hb-cx">✗ Отменена</span>'}</div>`).join('');
+  } catch(e) { list.innerHTML='<div class="empty-st"><div class="empty-ico">⚠️</div><div class="empty-txt">Ошибка загрузки</div></div>'; }
 }
 
 async function renderDHistory() {
-  const list = document.getElementById('d-hist-list');
-  list.innerHTML = '<div class="empty-st"><div class="empty-ico">⏳</div><div class="empty-txt">Загрузка...</div></div>';
-  const orders = await dbQuery('orders', 'status', '==', 'done');
-  const mine = orders.filter(o => o.acceptedDriver && o.acceptedDriver.driverId === STATE.user.tgId)
-    .sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-  if (!mine.length) {
-    list.innerHTML = '<div class="empty-st"><div class="empty-ico">📋</div><div class="empty-txt">Поездок пока нет</div></div>';
-    return;
-  }
-  list.innerHTML = mine.map(o => `
-    <div class="hist-card">
-      <div class="hist-hdr">
-        <div class="hist-date">${fmtDate(o.createdAt)}</div>
-        <div class="hist-price">${fmtPrice(o.acceptedPrice || o.price)}₸</div>
-      </div>
-      <div class="hist-route">${o.from} → ${o.to}</div>
-      <span class="hist-b hb-ok">✓ Завершена</span>
-    </div>
-  `).join('');
+  const list=document.getElementById('d-hist-list');
+  if(!list) return;
+  list.innerHTML='<div class="empty-st"><div class="empty-ico">⏳</div><div class="empty-txt">Загрузка...</div></div>';
+  try {
+    const orders=await dbQuery('orders','status','==','done');
+    const mine=orders.filter(o=>o.acceptedDriver&&o.acceptedDriver.driverId===STATE.user.tgId).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    if (!mine.length) { list.innerHTML='<div class="empty-st"><div class="empty-ico">📋</div><div class="empty-txt">Поездок пока нет</div></div>'; return; }
+    list.innerHTML=mine.map(o=>`<div class="hist-card"><div class="hist-hdr"><div class="hist-date">${fmtDate(o.createdAt)}</div><div class="hist-price">${fmtPrice(o.acceptedPrice||o.price)}₸</div></div><div class="hist-route">${o.from} → ${o.to}</div><span class="hist-b hb-ok">✓ Завершена</span></div>`).join('');
+  } catch(e) { list.innerHTML='<div class="empty-st"><div class="empty-ico">⚠️</div><div class="empty-txt">Ошибка загрузки</div></div>'; }
 }
 
 // ====================================
 // INTERCITY
 // ====================================
 function buildDateScroll() {
-  const container = document.getElementById('ic-date-scroll');
-  const days = ['ВС','ПН','ВТ','СР','ЧТ','ПТ','СБ'];
-  const months = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  container.innerHTML = '';
-  for (let i = 0; i < 31; i++) {
-    const d = new Date();
-    d.setDate(d.getDate() + i);
-    const chip = document.createElement('div');
-    chip.className = 'date-chip' + (i === 0 ? ' on' : '');
-    chip.innerHTML = `<div class="dc-day">${i === 0 ? 'Сегодня' : days[d.getDay()]}</div><div class="dc-num">${d.getDate()} ${months[d.getMonth()]}</div>`;
-    chip.onclick = () => {
-      document.querySelectorAll('.date-chip').forEach(c => c.classList.remove('on'));
-      chip.classList.add('on');
-      STATE.icDate = d.toISOString().split('T')[0];
-    };
+  const container=document.getElementById('ic-date-scroll');
+  if(!container) return;
+  const days=['ВС','ПН','ВТ','СР','ЧТ','ПТ','СБ'];
+  const months=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  container.innerHTML='';
+  for (let i=0;i<31;i++) {
+    const d=new Date(); d.setDate(d.getDate()+i);
+    const chip=document.createElement('div');
+    chip.className='date-chip'+(i===0?' on':'');
+    chip.innerHTML=`<div class="dc-day">${i===0?'Сегодня':days[d.getDay()]}</div><div class="dc-num">${d.getDate()} ${months[d.getMonth()]}</div>`;
+    chip.onclick=()=>{ document.querySelectorAll('.date-chip').forEach(c=>c.classList.remove('on')); chip.classList.add('on'); STATE.icDate=d.toISOString().split('T')[0]; };
     container.appendChild(chip);
-    if (i === 0) STATE.icDate = d.toISOString().split('T')[0];
+    if(i===0) STATE.icDate=d.toISOString().split('T')[0];
   }
 }
 
 function buildTimeWheel() {
-  const inner = document.getElementById('tw-inner');
-  inner.innerHTML = '';
-  const now = new Date();
-  let startMin = Math.ceil((now.getHours() * 60 + now.getMinutes()) / 5) * 5;
-  const times = [];
-  for (let m = startMin; m < 24 * 60; m += 5) {
-    const h = Math.floor(m / 60), min = m % 60;
-    times.push(`${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`);
-  }
-  times.forEach((t, i) => {
-    const div = document.createElement('div');
-    div.className = 'tw-item' + (i === 0 ? ' sel' : '');
-    div.textContent = t;
-    inner.appendChild(div);
-  });
-  STATE.icTime = times[0] || '00:00';
-
-  // Scroll handler
+  const inner=document.getElementById('tw-inner');
+  if(!inner) return;
+  inner.innerHTML='';
+  const now=new Date();
+  let startMin=Math.ceil((now.getHours()*60+now.getMinutes())/5)*5;
+  const times=[];
+  for (let m=startMin;m<24*60;m+=5) { const h=Math.floor(m/60),min=m%60; times.push(`${String(h).padStart(2,'0')}:${String(min).padStart(2,'0')}`); }
+  times.forEach((t,i)=>{ const div=document.createElement('div'); div.className='tw-item'+(i===0?' sel':''); div.textContent=t; inner.appendChild(div); });
+  STATE.icTime=times[0]||'00:00';
   let scrollTimer;
-  inner.addEventListener('scroll', () => {
-    clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(() => {
-      const idx = Math.round(inner.scrollTop / 46);
-      document.querySelectorAll('.tw-item').forEach((el, i) => el.classList.toggle('sel', i === idx));
-      STATE.icTime = times[idx] || times[0];
-    }, 100);
-  });
+  inner.addEventListener('scroll',()=>{ clearTimeout(scrollTimer); scrollTimer=setTimeout(()=>{ const idx=Math.round(inner.scrollTop/46); document.querySelectorAll('.tw-item').forEach((el,i)=>el.classList.toggle('sel',i===idx)); STATE.icTime=times[idx]||times[0]; },100); });
 }
 
 function selIcType(n) {
-  STATE.icType = n;
-  [0,1,2].forEach(i => document.getElementById('ic-t-' + i).classList.toggle('on', i === n));
+  STATE.icType=n;
+  [0,1,2].forEach(i=>document.getElementById('ic-t-'+i).classList.toggle('on',i===n));
 }
 
 async function createIcOrder() {
-  if (!STATE.icFromAddr) { showToast('Укажите откуда', 'err'); return; }
-  if (!STATE.icToAddr) { showToast('Укажите куда', 'err'); return; }
-  const price = parseInt(document.getElementById('ic-price').value);
-  if (!price) { showToast('Укажите цену', 'err'); return; }
-
-  const icTypes = ['С попутчиками','Посылка','Весь салон'];
-  const orderId = 'IC-' + Date.now();
-  const order = {
-    id: orderId,
-    passengerId: STATE.user.tgId,
-    passengerName: STATE.user.name,
-    passengerPhone: STATE.user.phone,
-    passengerRating: STATE.user.rating,
-    from: STATE.icFromAddr.address,
-    to: STATE.icToAddr.address,
-    date: STATE.icDate,
-    time: STATE.icTime,
-    type: 'intercity',
-    icType: icTypes[STATE.icType],
-    price,
-    comment: document.getElementById('ic-comment').value.trim(),
-    status: 'searching',
-    contacts: [],
-    city: STATE.user.city,
-    createdAt: new Date().toISOString(),
-  };
-  await dbSet('orders', orderId, order);
-  document.getElementById('ic-price').value = '';
-  document.getElementById('ic-comment').value = '';
-  showToast('Заявка размещена!', 'ok');
+  if(!STATE.icFromAddr){showToast('Укажите откуда','err');return;}
+  if(!STATE.icToAddr){showToast('Укажите куда','err');return;}
+  const price=parseInt(document.getElementById('ic-price').value);
+  if(!price){showToast('Укажите цену','err');return;}
+  const icTypes=['С попутчиками','Посылка','Весь салон'];
+  const orderId='IC-'+Date.now();
+  await dbSet('orders',orderId,{id:orderId,passengerId:STATE.user.tgId,passengerName:STATE.user.name,passengerPhone:STATE.user.phone,passengerRating:STATE.user.rating,from:STATE.icFromAddr.address,to:STATE.icToAddr.address,date:STATE.icDate,time:STATE.icTime,type:'intercity',icType:icTypes[STATE.icType],price,comment:document.getElementById('ic-comment').value.trim(),status:'searching',contacts:[],city:STATE.user.city,createdAt:new Date().toISOString()});
+  document.getElementById('ic-price').value='';
+  document.getElementById('ic-comment').value='';
+  showToast('Заявка размещена!','ok');
   renderIcMyOrders();
 }
 
 async function renderIcMyOrders() {
-  const list = document.getElementById('ic-my-orders-list');
-  const orders = await dbQuery('orders', 'passengerId', '==', STATE.user.tgId);
-  const icOrders = orders.filter(o => o.type === 'intercity').sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-  if (!icOrders.length) {
-    list.innerHTML = '<div class="empty-st" style="padding:20px"><div class="empty-ico" style="font-size:28px">🛣️</div><div class="empty-txt">Нет заявок</div></div>';
-    return;
-  }
-  list.innerHTML = icOrders.map(o => `
-    <div class="ord-card">
-      <div class="ord-hdr">
-        <div style="font-size:11px;color:var(--text3)">${o.date} ${o.time}</div>
-        <span class="tag ${o.status==='done'?'tag-g':o.status==='cancelled'?'':'tag-y'}">${o.status==='searching'?'🔍 Поиск':o.status==='done'?'✓ Принято':'✗ Отменено'}</span>
-      </div>
-      <div class="ord-route">
-        <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt">${o.from}</div></div>
-        <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt">${o.to}</div></div>
-      </div>
-      <div class="ord-bot">
-        <div class="offer-price">${fmtPrice(o.price)}₸</div>
-        ${o.status === 'searching' ? `
-          <div style="display:flex;gap:7px">
-            ${(o.contacts||[]).length > 0 ? `<button class="btn btn-green btn-sm" onclick="icFoundDriver('${o.id}')">Нашёл водителя ✓</button>` : ''}
-            <button class="btn btn-out btn-sm" onclick="icCancel('${o.id}')">Отменить</button>
-          </div>` : ''}
-      </div>
-      ${(o.contacts||[]).length > 0 ? `<div style="padding:0 14px 12px;font-size:12px;color:var(--green)">📞 Звонили водителей: ${(o.contacts||[]).length}</div>` : ''}
-    </div>
-  `).join('');
+  const list=document.getElementById('ic-my-orders-list');
+  if(!list) return;
+  try {
+    const orders=await dbQuery('orders','passengerId','==',STATE.user.tgId);
+    const ic=orders.filter(o=>o.type==='intercity').sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt));
+    if(!ic.length){list.innerHTML='<div class="empty-st" style="padding:20px"><div class="empty-ico" style="font-size:28px">🛣️</div><div class="empty-txt">Нет заявок</div></div>';return;}
+    list.innerHTML=ic.map(o=>`<div class="ord-card"><div class="ord-hdr"><div style="font-size:11px;color:var(--text3)">${o.date} ${o.time}</div><span class="tag ${o.status==='done'?'tag-g':o.status==='cancelled'?'':'tag-y'}">${o.status==='searching'?'🔍 Поиск':o.status==='done'?'✓ Принято':'✗ Отменено'}</span></div><div class="ord-route"><div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt">${o.from}</div></div><div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt">${o.to}</div></div></div><div class="ord-bot"><div class="offer-price">${fmtPrice(o.price)}₸</div>${o.status==='searching'?`<div style="display:flex;gap:7px">${(o.contacts||[]).length>0?`<button class="btn btn-green btn-sm" onclick="icFoundDriver('${o.id}')">Нашёл водителя ✓</button>`:''}<button class="btn btn-out btn-sm" onclick="icCancel('${o.id}')">Отменить</button></div>`:''}</div>${(o.contacts||[]).length>0?`<div style="padding:0 14px 12px;font-size:12px;color:var(--green)">📞 Звонили водителей: ${(o.contacts||[]).length}</div>`:''}</div>`).join('');
+  } catch(e) {}
 }
 
 async function icFoundDriver(orderId) {
-  const order = await dbGet('orders', orderId);
-  if (!order) return;
-  const contacts = order.contacts || [];
-  if (!contacts.length) { showToast('Никто ещё не звонил', 'warn'); return; }
-  // Show picker
-  const opts = contacts.map((c,i) => `${i+1}. ${c.name}`).join('\n');
-  tg.showAlert(`Выберите водителя:\n${opts}\n\nОтветьте номером в поддержке`, () => {
-    // In real app: show selection modal
-    showToast('Свяжитесь с поддержкой для выбора водителя', 'warn');
-  });
+  const order=await dbGet('orders',orderId);
+  if(!order) return;
+  const contacts=order.contacts||[];
+  if(!contacts.length){showToast('Никто ещё не звонил','warn');return;}
+  tg.showAlert(`Водители что звонили:\n${contacts.map((c,i)=>`${i+1}. ${c.name} — ${c.phone}`).join('\n')}\n\nСвяжитесь с нужным и отметьте заявку выполненной`,()=>{});
 }
 
 async function icCancel(orderId) {
-  tg.showConfirm('Отменить заявку?', async (ok) => {
-    if (!ok) return;
-    await dbSet('orders', orderId, {status: 'cancelled'});
-    renderIcMyOrders();
-    showToast('Заявка отменена');
-  });
+  tg.showConfirm('Отменить заявку?',async(ok)=>{if(!ok)return;await dbSet('orders',orderId,{status:'cancelled'});renderIcMyOrders();showToast('Заявка отменена');});
 }
 
-// IC driver: contact passenger
 async function icDriverContact(orderId) {
-  const order = await dbGet('orders', orderId);
-  if (!order) return;
-  STATE.icContactOrderId = orderId;
-  document.getElementById('ic-contact-name').textContent = order.passengerName;
-  document.getElementById('ic-contact-phone').textContent = order.passengerPhone;
-  document.getElementById('ic-contact-route').textContent = `${order.from} → ${order.to} · ${order.date} ${order.time}`;
-  document.getElementById('ic-call-btn').href = 'tel:' + order.passengerPhone;
+  const order=await dbGet('orders',orderId);
+  if(!order) return;
+  STATE.icContactOrderId=orderId;
+  const n=document.getElementById('ic-contact-name'); if(n) n.textContent=order.passengerName;
+  const p=document.getElementById('ic-contact-phone'); if(p) p.textContent=order.passengerPhone;
+  const r=document.getElementById('ic-contact-route'); if(r) r.textContent=`${order.from} → ${order.to} · ${order.date} ${order.time}`;
+  const btn=document.getElementById('ic-call-btn'); if(btn) btn.href='tel:'+order.passengerPhone;
   openModal('mo-ic-contact');
-
-  // Add to contacts list
-  const contacts = order.contacts || [];
-  if (!contacts.find(c => c.driverId === STATE.user.tgId)) {
-    contacts.push({
-      driverId: STATE.user.tgId,
-      name: STATE.user.name,
-      phone: STATE.user.phone,
-      contactedAt: new Date().toISOString(),
-    });
-    await dbSet('orders', orderId, {contacts});
+  const contacts=order.contacts||[];
+  if(!contacts.find(c=>c.driverId===STATE.user.tgId)){
+    contacts.push({driverId:STATE.user.tgId,name:STATE.user.name,phone:STATE.user.phone,contactedAt:new Date().toISOString()});
+    await dbSet('orders',orderId,{contacts});
   }
-}
-
-// IC driver orders list
-function renderIcDriverOrders(orders) {
-  const list = document.getElementById('d-orders-list');
-  const icOrders = orders.filter(o => o.type === 'intercity');
-  if (!icOrders.length) {
-    list.innerHTML = '<div class="empty-st"><div class="empty-ico">🛣️</div><div class="empty-txt">Нет межгородних заявок</div></div>';
-    return;
-  }
-  list.innerHTML = icOrders.map(o => `
-    <div class="ord-card">
-      <div class="ord-hdr">
-        <div style="font-size:11px;color:var(--text3)">${o.date} ${o.time}</div>
-        <span class="tag tag-y">${o.icType}</span>
-      </div>
-      <div class="ord-route">
-        <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt">${o.from}</div></div>
-        <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt">${o.to}</div></div>
-      </div>
-      <div class="ord-bot">
-        <div>
-          <div style="font-size:10px;color:var(--text3)">Предлагает</div>
-          <div class="offer-price">${fmtPrice(o.price)}₸</div>
-        </div>
-        <button class="btn btn-y btn-sm" onclick="icDriverContact('${o.id}')">📞 Связаться</button>
-      </div>
-    </div>
-  `).join('');
 }
 
 // ====================================
 // SUPPORT CHAT
 // ====================================
 function openSupportChat() {
-  STATE.supportChatFrom = STATE.role;
+  STATE.supportChatFrom=STATE.role;
   showScreen('s-support');
   loadSupportMsgs();
 }
 
 function closeSupportChat() {
-  if (unsubSupportChat) { unsubSupportChat(); unsubSupportChat = null; }
-  if (STATE.supportChatFrom === 'driver') {
-    showScreen('s-driver');
-  } else {
-    showScreen('s-passenger');
-  }
+  if(unsubSupportChat){unsubSupportChat();unsubSupportChat=null;}
+  showScreen(STATE.supportChatFrom==='driver'?'s-driver':'s-passenger');
 }
 
 async function loadSupportMsgs() {
-  const chatId = 'support_' + STATE.user.tgId;
-  const msgsEl = document.getElementById('support-msgs');
-  msgsEl.innerHTML = '<div class="msg msg-in">Привет! Чем могу помочь? 😊<div class="msg-time">Сейчас</div></div>';
-
-  if (unsubSupportChat) unsubSupportChat();
-  unsubSupportChat = onSnapshot('chats', 'chatId', '==', chatId, (msgs) => {
-    const sorted = msgs.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
-    const extra = sorted.map(m => `
-      <div class="msg ${m.from === 'user' ? 'msg-out' : 'msg-in'}">
-        ${m.text}
-        <div class="msg-time">${fmtTime(m.createdAt)}</div>
-      </div>
-    `).join('');
-    msgsEl.innerHTML = '<div class="msg msg-in">Привет! Чем могу помочь? 😊<div class="msg-time"></div></div>' + extra;
-    msgsEl.scrollTop = msgsEl.scrollHeight;
+  const chatId='support_'+STATE.user.tgId;
+  const msgsEl=document.getElementById('support-msgs');
+  if(!msgsEl) return;
+  msgsEl.innerHTML='<div class="msg msg-in">Привет! Чем могу помочь? 😊<div class="msg-time">Сейчас</div></div>';
+  if(unsubSupportChat) unsubSupportChat();
+  unsubSupportChat=onSnapshotQuery('chats','chatId','==',chatId,(msgs)=>{
+    const sorted=msgs.sort((a,b)=>new Date(a.createdAt)-new Date(b.createdAt));
+    const extra=sorted.map(m=>`<div class="msg ${m.from==='user'?'msg-out':'msg-in'}">${m.text}<div class="msg-time">${fmtTime(m.createdAt)}</div></div>`).join('');
+    msgsEl.innerHTML='<div class="msg msg-in">Привет! Чем могу помочь? 😊<div class="msg-time"></div></div>'+extra;
+    msgsEl.scrollTop=msgsEl.scrollHeight;
   });
 }
 
 async function sendSupportMsg() {
-  const input = document.getElementById('support-input');
-  const text = input.value.trim();
-  if (!text) return;
-  input.value = '';
-  const chatId = 'support_' + STATE.user.tgId;
-  const msgId = 'MSG-' + Date.now();
-  await dbSet('chats', msgId, {
-    chatId, from: 'user', text,
-    userId: STATE.user.tgId,
-    userName: STATE.user.name,
-    createdAt: new Date().toISOString(),
-  });
-  // Scroll
-  setTimeout(() => {
-    const el = document.getElementById('support-msgs');
-    el.scrollTop = el.scrollHeight;
-  }, 100);
+  const input=document.getElementById('support-input');
+  const text=input.value.trim();
+  if(!text) return;
+  input.value='';
+  const chatId='support_'+STATE.user.tgId;
+  await dbSet('chats','MSG-'+Date.now(),{chatId,from:'user',text,userId:STATE.user.tgId,userName:STATE.user.name,createdAt:new Date().toISOString()});
+  setTimeout(()=>{ const el=document.getElementById('support-msgs'); if(el) el.scrollTop=el.scrollHeight; },100);
 }
 
 // ====================================
 // ADDRESS MODAL
 // ====================================
 function openAddrModal(target) {
-  STATE.addrTarget = target;
-  const titles = {
-    from: 'Откуда едем?', to: 'Куда едем?',
-    'ic-from': 'Откуда (город + адрес)', 'ic-to': 'Куда (город + адрес)'
-  };
-  document.getElementById('mo-addr-title').textContent = titles[target] || 'Адрес';
-  const cur = target === 'from' ? STATE.fromAddr : target === 'to' ? STATE.toAddr :
-    target === 'ic-from' ? STATE.icFromAddr : STATE.icToAddr;
-  document.getElementById('mo-addr-input').value = cur ? cur.address : '';
-  document.getElementById('mo-ent-input').value = cur ? (cur.entrance || '') : '';
+  STATE.addrTarget=target;
+  const titles={from:'Откуда едем?',to:'Куда едем?','ic-from':'Откуда (город + адрес)','ic-to':'Куда (город + адрес)'};
+  const titleEl=document.getElementById('mo-addr-title');
+  if(titleEl) titleEl.textContent=titles[target]||'Адрес';
+  const cur=target==='from'?STATE.fromAddr:target==='to'?STATE.toAddr:target==='ic-from'?STATE.icFromAddr:STATE.icToAddr;
+  const ai=document.getElementById('mo-addr-input'); if(ai) ai.value=cur?cur.address:'';
+  const ei=document.getElementById('mo-ent-input'); if(ei) ei.value=cur?(cur.entrance||''):'';
   openModal('mo-address');
-  setTimeout(() => document.getElementById('mo-addr-input').focus(), 350);
+  setTimeout(()=>{ const el=document.getElementById('mo-addr-input'); if(el) el.focus(); },350);
 }
 
 function saveAddr() {
-  const addr = document.getElementById('mo-addr-input').value.trim();
-  const entrance = document.getElementById('mo-ent-input').value.trim();
-  if (!addr) { showToast('Введите адрес', 'err'); return; }
-  const data = {address: addr, entrance};
-
-  if (STATE.addrTarget === 'from') {
-    STATE.fromAddr = data;
-    document.getElementById('p-from-txt').innerHTML = addr;
-    document.getElementById('p-from-ent').textContent = entrance ? 'Подъезд ' + entrance : '';
-  } else if (STATE.addrTarget === 'to') {
-    STATE.toAddr = data;
-    document.getElementById('p-to-txt').innerHTML = addr;
-    document.getElementById('p-to-ent').textContent = entrance ? 'Подъезд ' + entrance : '';
-  } else if (STATE.addrTarget === 'ic-from') {
-    STATE.icFromAddr = data;
-    document.getElementById('ic-from-txt').textContent = addr;
-  } else if (STATE.addrTarget === 'ic-to') {
-    STATE.icToAddr = data;
-    document.getElementById('ic-to-txt').textContent = addr;
-  }
+  const addr=document.getElementById('mo-addr-input').value.trim();
+  const entrance=document.getElementById('mo-ent-input').value.trim();
+  if(!addr){showToast('Введите адрес','err');return;}
+  const data={address:addr,entrance};
+  if(STATE.addrTarget==='from'){STATE.fromAddr=data;const el=document.getElementById('p-from-txt');if(el)el.textContent=addr;const ee=document.getElementById('p-from-ent');if(ee)ee.textContent=entrance?'Подъезд '+entrance:'';}
+  else if(STATE.addrTarget==='to'){STATE.toAddr=data;const el=document.getElementById('p-to-txt');if(el)el.textContent=addr;const ee=document.getElementById('p-to-ent');if(ee)ee.textContent=entrance?'Подъезд '+entrance:'';}
+  else if(STATE.addrTarget==='ic-from'){STATE.icFromAddr=data;const el=document.getElementById('ic-from-txt');if(el)el.textContent=addr;}
+  else if(STATE.addrTarget==='ic-to'){STATE.icToAddr=data;const el=document.getElementById('ic-to-txt');if(el)el.textContent=addr;}
   closeModal('mo-address');
 }
 
 // ====================================
-// PASSENGERS / PAY CHIPS
-// ====================================
-function chPax(d) {
-  STATE.pax = Math.max(1, Math.min(8, STATE.pax + d));
-  document.getElementById('mo-pax-num').textContent = STATE.pax;
-}
-function savePax() {
-  document.getElementById('chip-pax-lbl').textContent = `${STATE.pax} пасс.`;
-  closeModal('mo-pax');
-}
-function toggleChip(name) {id="set-car-bloc
-  if (name === 'child') {
-    STATE.childSeat = !STATE.childSeat;
-    document.getElementById('chip-child').classList.toggle('on', STATE.childSeat);
-  }
-}
-function selPay(m) {
-  STATE.payMethod = m;
-  document.getElementById('pay-cash-check').style.color = m === 'cash' ? 'var(--y)' : 'var(--text3)';
-  document.getElementById('pay-transfer-check').style.color = m === 'transfer' ? 'var(--y)' : 'var(--text3)';
-  document.getElementById('chip-pay-lbl').textContent = m === 'cash' ? 'Наличные' : 'Перевод';
-}
-
-// ====================================
-// SETTINGS
+// MODAL / CHIPS / PAY / SETTINGS
 // ====================================
 function openModal(id) {
-  if (id === 'mo-settings' && STATE.user) {
-    document.getElementById('become-driver-block').style.display =
-      STATE.user.role === 'passenger' ? 'block' : 'none';
-    // pre-fill settings
-    document.getElementById('set-name').value = STATE.user.name || '';
-    const country = STATE.user.country || 'kz';
-    document.getElementById('set-country').value = country;
-    fillCities('set-city', 'set-country');
-    setTimeout(() => {
-      document.getElementById('set-city').value = STATE.user.city || '';
-    }, 50);
-    if (STATE.user.car) {
-      document.getElementById('set-car-brand').value = STATE.user.car.brand || '';
-      document.getElementById('set-car-year').value = STATE.user.car.year || '';
-      document.getElementById('set-car-num').value = STATE.user.car.num || '';
-      document.getElementById('set-car-color').value = STATE.user.car.color || '';
+  if(id==='mo-settings'&&STATE.user) {
+    const bdb=document.getElementById('become-driver-block');
+    if(bdb) bdb.style.display=STATE.user.role==='passenger'?'block':'none';
+    const sn=document.getElementById('set-name'); if(sn) sn.value=STATE.user.name||'';
+    const sc=document.getElementById('set-country'); if(sc){sc.value=STATE.user.country||'kz';fillCities('set-city','set-country');}
+    setTimeout(()=>{const sc2=document.getElementById('set-city');if(sc2)sc2.value=STATE.user.city||'';},50);
+    if(STATE.user.car){
+      const sb=document.getElementById('set-car-brand');if(sb)sb.value=STATE.user.car.brand||'';
+      const sy=document.getElementById('set-car-year');if(sy)sy.value=STATE.user.car.year||'';
+      const sn2=document.getElementById('set-car-num');if(sn2)sn2.value=STATE.user.car.num||'';
+      const sco=document.getElementById('set-car-color');if(sco)sco.value=STATE.user.car.color||'';
     }
   }
-  document.getElementById(id).classList.add('open');
+  const el=document.getElementById(id); if(el) el.classList.add('open');
 }
-function closeModal(id) {
-  document.getElementById(id).classList.remove('open');
+function closeModal(id) { const el=document.getElementById(id); if(el) el.classList.remove('open'); }
+
+function chPax(d) { STATE.pax=Math.max(1,Math.min(8,STATE.pax+d)); const el=document.getElementById('mo-pax-num'); if(el) el.textContent=STATE.pax; }
+function savePax() { const el=document.getElementById('chip-pax-lbl'); if(el) el.textContent=`${STATE.pax} пасс.`; closeModal('mo-pax'); }
+function toggleChip(name) {
+  if(name==='child'){STATE.childSeat=!STATE.childSeat;const el=document.getElementById('chip-child');if(el)el.classList.toggle('on',STATE.childSeat);}
+}
+function selPay(m) {
+  STATE.payMethod=m;
+  const cc=document.getElementById('pay-cash-check');if(cc)cc.style.color=m==='cash'?'var(--y)':'var(--text3)';
+  const tc=document.getElementById('pay-transfer-check');if(tc)tc.style.color=m==='transfer'?'var(--y)':'var(--text3)';
+  const pl=document.getElementById('chip-pay-lbl');if(pl)pl.textContent=m==='cash'?'Наличные':'Перевод';
 }
 
 async function saveSettings() {
-  const name = document.getElementById('set-name').value.trim();
-  const country = document.getElementById('set-country').value;
-  const city = document.getElementById('set-city').value;
-  if (!name) { showToast('Введите имя', 'err'); return; }
-  if (!city) { showToast('Выберите город', 'err'); return; }
-
-  const updates = {name, country, city};
-
-  if (STATE.user.role === 'driver') {
-    const brand = document.getElementById('set-car-brand').value.trim();
-    const year = document.getElementById('set-car-year').value;
-    const num = document.getElementById('set-car-num').value.trim().toUpperCase();
-    const color = document.getElementById('set-car-color').value.trim();
-    if (brand && num && color) {
-      const carChanged = JSON.stringify({brand, num, color, year}) !== JSON.stringify(STATE.user.car || {});
-      if (carChanged) {
-        updates.car = {brand, num, color, year};
-        updates.approved = false; // Require re-approval
-        showToast('Данные авто изменены. Ожидайте подтверждения.', 'warn');
+  const name=document.getElementById('set-name').value.trim();
+  const country=document.getElementById('set-country').value;
+  const city=document.getElementById('set-city').value;
+  if(!name){showToast('Введите имя','err');return;}
+  if(!city){showToast('Выберите город','err');return;}
+  const updates={name,country,city};
+  if(STATE.user.role==='driver'){
+    const brand=document.getElementById('set-car-brand').value.trim();
+    const year=document.getElementById('set-car-year').value;
+    const num=document.getElementById('set-car-num').value.trim().toUpperCase();
+    const color=document.getElementById('set-car-color').value.trim();
+    if(brand&&num&&color){
+      if(JSON.stringify({brand,num,color,year})!==JSON.stringify(STATE.user.car||{})){
+        updates.car={brand,num,color,year}; updates.approved=false;
+        showToast('Данные авто изменены. Ожидайте подтверждения.','warn');
       }
     }
   }
-
-  STATE.user = {...STATE.user, ...updates};
-  saveState();
-  await dbSet('users', STATE.user.tgId, updates);
-  updateAllUI();
-  updateDriverUI();
-  closeModal('mo-settings');
-  showToast('Сохранено', 'ok');
+  STATE.user={...STATE.user,...updates}; saveState();
+  try { await dbSet('users',STATE.user.tgId,updates); } catch(e){}
+  updateAllUI(); updateDriverUI(); closeModal('mo-settings');
+  showToast('Сохранено','ok');
 }
 
-// ====================================
-// ROLE SWITCH
-// ====================================
-async function switchRole() {
-  const newRole = STATE.role === 'passenger' ? 'driver' : 'passenger';
-  tg.showConfirm(`Переключиться на ${newRole === 'driver' ? 'водителя' : 'пассажира'}?`, async (ok) => {
-    if (!ok) return;
-    if (newRole === 'driver' && !STATE.user.car) {
-      showToast('Для водителя нужно заполнить данные авто в настройках', 'warn');
-      openModal('mo-settings');
-      return;
-    }
-    STATE.role = newRole;
-    if (STATE.user) STATE.user.role = newRole;
-    saveState();
-    if (newRole === 'passenger') {
-      showScreen('s-passenger');
-      setupPassengerListeners();
-    } else {
-      showScreen('s-driver');
-      setupDriverListeners();
-    }
+async function becomeDriver() {
+  const brand=document.getElementById('set-car-brand').value.trim();
+  const year=parseInt(document.getElementById('set-car-year').value);
+  const num=document.getElementById('set-car-num').value.trim().toUpperCase();
+  const color=document.getElementById('set-car-color').value.trim();
+  if(!brand||!num||!color||!year){showToast('Заполните все данные автомобиля!','err');return;}
+  showLoading(true);
+  try {
+    await dbSet('users',STATE.user.tgId,{role:'driver',car:{brand,year,num,color},approved:false,appliedForDriverAt:new Date().toISOString()});
+    STATE.user.role='driver'; STATE.user.car={brand,year,num,color}; STATE.user.approved=false;
+    saveState(); closeModal('mo-settings');
+    showToast('✅ Заявка на водителя отправлена!','ok');
     updateAllUI();
-    showToast('Режим переключён', 'ok');
+  } catch(e){ showToast('Ошибка при отправке заявки','err'); }
+  showLoading(false);
+}
+
+async function switchRole() {
+  const newRole=STATE.role==='passenger'?'driver':'passenger';
+  tg.showConfirm(`Переключиться на ${newRole==='driver'?'водителя':'пассажира'}?`,async(ok)=>{
+    if(!ok) return;
+    if(newRole==='driver'&&!STATE.user.car){showToast('Для водителя нужно заполнить данные авто в настройках','warn');openModal('mo-settings');return;}
+    STATE.role=newRole; if(STATE.user) STATE.user.role=newRole; saveState();
+    if(newRole==='passenger'){showScreen('s-passenger');setupPassengerListeners();}
+    else{showScreen('s-driver');setupDriverListeners();}
+    updateAllUI(); showToast('Режим переключён','ok');
   });
 }
 
-function goBack() {
-  if (STATE.role === 'passenger') showScreen('s-passenger');
-  else showScreen('s-driver');
-}
+function goBack() { showScreen(STATE.role==='passenger'?'s-passenger':'s-driver'); }
+function openIntercity() { buildDateScroll(); buildTimeWheel(); renderIcMyOrders(); showScreen('s-intercity'); }
 
 // ====================================
 // UTILS
 // ====================================
-function fmtPrice(n) { return n ? Number(n).toLocaleString('ru') : '0'; }
-function fmtRating(r) { return r ? Number(r).toFixed(1) : '—'; }
-function fmtDate(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleDateString('ru-RU', {day:'2-digit', month:'short', year:'numeric'});
-}
-function fmtTime(iso) {
-  if (!iso) return '';
-  return new Date(iso).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
-}
-function fmtRelTime(iso) {
-  if (!iso) return '';
-  const diff = Date.now() - new Date(iso);
-  if (diff < 60000) return 'только что';
-  if (diff < 3600000) return Math.floor(diff/60000) + ' мин назад';
-  return fmtTime(iso);
-}
+function fmtPrice(n){return n?Number(n).toLocaleString('ru'):'0';}
+function fmtRating(r){return r?Number(r).toFixed(1):'—';}
+function fmtDate(iso){if(!iso)return'';return new Date(iso).toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'});}
+function fmtTime(iso){if(!iso)return'';return new Date(iso).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});}
+function fmtRelTime(iso){if(!iso)return'';const diff=Date.now()-new Date(iso);if(diff<60000)return'только что';if(diff<3600000)return Math.floor(diff/60000)+' мин назад';return fmtTime(iso);}
 
 let toastTimer;
-function showToast(msg, type = '') {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.className = 'toast show' + (type ? ' ' + type : '');
-  if (toastTimer) clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+function showToast(msg,type=''){
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.className='toast show'+(type?' '+type:'');
+  if(toastTimer)clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
 }
-
-// Close modals on overlay click
-document.querySelectorAll('.mo').forEach(overlay => {
-  overlay.addEventListener('click', e => {
-    if (e.target === overlay) overlay.classList.remove('open');
-  });
-});
-
-// ====================================
-// INTERCITY SCREEN LINK
-// ====================================
-function openIntercity() {
-  buildDateScroll();
-  buildTimeWheel();
-  renderIcMyOrders();
-  showScreen('s-intercity');
-}
-
-// Add intercity button to passenger nav if needed
-// Can be accessed from profile or special chip
-document.addEventListener('DOMContentLoaded', () => {
-  // Add intercity option in passenger order form
-  const chips = document.querySelector('.chips');
-  if (chips) {
-    const icChip = document.createElement('div');
-    icChip.className = 'chip';
-    icChip.innerHTML = '<span class="chip-ico">🛣️</span><span>Межгород</span>';
-    icChip.onclick = openIntercity;
-    chips.appendChild(icChip);
-  }
-});
 </script>
 </body>
 </html>
