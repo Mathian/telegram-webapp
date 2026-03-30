@@ -430,19 +430,15 @@ tr:hover td{background:var(--bg3)}
 <div class="toast" id="toast"></div>
 
 <script>
-// ====================================
-// FIREBASE CONFIG - ТАКОЙ ЖЕ КАК В index.html!
-// ====================================
+
 const firebaseConfig = {
   apiKey: "AIzaSyDnH2Uz70mnGuQ85WzNAOsUmgGYqXwfGcg",
   authDomain: "telegram-taxi-20164.firebaseapp.com",
   projectId: "telegram-taxi-20164",
   storageBucket: "telegram-taxi-20164.firebasestorage.app",
   messagingSenderId: "713264125968",
-  appId: "1:713264125968:web:258e0e18654cbdf2ea9295",
-  measurementId: "G-X1FXFCWLP2"
+  appId: "1:713264125968:web:258e0e18654cbdf2ea9295"
 };
-
 // ====================================
 // ADMIN CREDENTIALS - СМЕНИТЕ!
 // ====================================
@@ -471,11 +467,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 function initFirebase() {
   try {
-    if (FB_CONFIG.apiKey === "YOUR_API_KEY") {
-      showToast('Firebase не настроен. Часть функций недоступна.', 'err');
-      return;
-    }
-    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     isFirebaseReady = true;
   } catch(e) { console.error(e); }
