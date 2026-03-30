@@ -1238,8 +1238,6 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 
 <script>
 
-// ====================== STATE ======================
-// ====================== STATE ======================
 let STATE = {
   registered: false,
   role: 'passenger',
@@ -1292,20 +1290,7 @@ const firebaseConfig = {
 let db = null;
 let isFirebaseReady = false;
 
-function initFirebase() {
-  try {
-    if (!firebase.apps.length) {
-      firebase.initializeApp(firebaseConfig);
-    }
-    db = firebase.firestore();
-    isFirebaseReady = true;
-    console.log("Firebase ready");
-    firebase.auth().signInAnonymously().catch(e => console.warn("Auth:", e));
-  } catch(e) {
-    console.error("Firebase init error:", e);
-    isFirebaseReady = false;
-  }
-}
+
 
 // ====================== BECOME DRIVER ======================
 async function becomeDriver() {
@@ -1377,34 +1362,21 @@ let arrivalSoundInterval = null;
 let geoWatchId = null;
 let geoTransmitInterval = null;
 
-let STATE = {
-  registered: false,
-  role: 'passenger', // passenger | driver
-  user: null,
-  // order state
-  activeOrderId: null,
-  driverActiveOrderId: null,
-  // ui
-  obRole: '',
-  addrTarget: '',
-  fromAddr: null, toAddr: null,
-  icFromAddr: null, icToAddr: null,
-  pax: 1, childSeat: false, payMethod: 'cash',
-  geoEnabled: false,
-  // driver
-  driverMode: 'city', // city | intercity
-  shiftActive: false,
-  shiftUntil: null,
-  shiftTrips: 0,
-  // rating
-  ratingFor: null, ratingOrderId: null, currentRating: 0,
-  currentOfferOrderId: null,
-  // ic
-  icDate: null, icTime: null, icType: 0,
-  // support
-  supportChatFrom: null,
-  icContactOrderId: null,
-};
+
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    isFirebaseReady = true;
+    console.log("Firebase ready");
+    firebase.auth().signInAnonymously().catch(e => console.warn("Auth:", e));
+  } catch(e) {
+    console.error("Firebase init error:", e);
+    isFirebaseReady = false;
+  }
+}
 
 // ====================================
 // TELEGRAM WEBAPP
@@ -2986,7 +2958,7 @@ function savePax() {
   document.getElementById('chip-pax-lbl').textContent = `${STATE.pax} пасс.`;
   closeModal('mo-pax');
 }
-function toggleChip(name) {id="set-car-bloc
+function toggleChip(name) {
   if (name === 'child') {
     STATE.childSeat = !STATE.childSeat;
     document.getElementById('chip-child').classList.toggle('on', STATE.childSeat);
