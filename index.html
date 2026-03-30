@@ -43,7 +43,6 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif}
-
 /* ===== SCREENS ===== */
 .screen{
   position:fixed;inset:0;display:flex;flex-direction:column;background:var(--bg);
@@ -1155,10 +1154,7 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
           <label>Страна</label>
           <select id="set-country" onchange="fillCities('set-city','set-country')">
             <option value="kz">🇰🇿 Казахстан</option>
-            <option value="ru">🇷🇺 Россия</option>
-            <option value="by">🇧🇾 Беларусь</option>
-            <option value="uz">🇺🇿 Узбекистан</option>
-            <option value="kg">🇰🇬 Кыргызстан</option>
+            <!-- другие страны -->
           </select>
         </div>
         <div class="field">
@@ -1166,29 +1162,31 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
           <select id="set-city"></select>
         </div>
       </div>
-      <div id="set-car-block" style="display:none">
-        <div class="divider"></div>
-        <div class="slabel">Данные авто (требует повторной проверки)</div>
+
+      <!-- === БЛОК СТАТЬ ВОДИТЕЛЕМ === -->
+      <div id="become-driver-block" style="display:none; margin-top:20px; padding:16px; background:var(--bg3); border:1px solid var(--y); border-radius:12px;">
+        <div class="slabel" style="color:var(--y)">Хотите стать водителем?</div>
         <div class="frow">
           <div class="field">
-            <label>Марка</label>
-            <input type="text" id="set-car-brand">
+            <label>Марка авто</label>
+            <input type="text" id="set-car-brand" placeholder="Toyota Camry">
           </div>
           <div class="field">
-            <label>Год</label>
-            <input type="number" id="set-car-year">
+            <label>Год выпуска</label>
+            <input type="number" id="set-car-year" placeholder="2022" min="1990" max="2026">
           </div>
         </div>
         <div class="frow">
           <div class="field">
-            <label>Номер</label>
-            <input type="text" id="set-car-num" style="text-transform:uppercase">
+            <label>Гос. номер</label>
+            <input type="text" id="set-car-num" placeholder="A123BC" style="text-transform:uppercase">
           </div>
           <div class="field">
             <label>Цвет</label>
-            <input type="text" id="set-car-color">
+            <input type="text" id="set-car-color" placeholder="Белый">
           </div>
         </div>
+        <button class="btn btn-y" onclick="becomeDriver()" style="margin-top:12px;width:100%">Подать заявку на водителя</button>
       </div>
     </div>
     <button class="btn btn-y" onclick="saveSettings()">Сохранить</button>
@@ -1239,23 +1237,81 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <div class="toast" id="toast"></div>
 
 <script>
-// ====================================
-// FIREBASE CONFIG - ЗАМЕНИТЕ НА ВАШИ!
-// ====================================
+// ====================== FIREBASE CONFIG ======================
 const firebaseConfig = {
   apiKey: "AIzaSyDnH2Uz70mnGuQ85WzNAOsUmgGYqXwfGcg",
   authDomain: "telegram-taxi-20164.firebaseapp.com",
   projectId: "telegram-taxi-20164",
   storageBucket: "telegram-taxi-20164.firebasestorage.app",
   messagingSenderId: "713264125968",
-  appId: "1:713264125968:web:258e0e18654cbdf2ea9295",
-  measurementId: "G-X1FXFCWLP2"
+  appId: "1:713264125968:web:258e0e18654cbdf2ea9295"
 };
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// ====================== STATE ======================
+let STATE = {
+  registered: false,
+  role: 'passenger',
+  user: null,
+  // ... все остальные ваши переменные
+};
+
+// ====================== BECOME DRIVER ======================
+async function becomeDriver() {
+  const brand = document.getElementById('set-car-brand').value.trim();
+  const year = parseInt(document.getElementById('set-car-year').value);
+  const num = document.getElementById('set-car-num').value.trim().toUpperCase();
+  const color = document.getElementById('set-car-color').value.trim();
+
+  if (!brand || !num || !color || !year) {
+    showToast('Заполните все данные автомобиля!', 'err');
+    return;
+  }
+
+  try {
+    await db.collection('users').doc(STATE.user.tgId).set({
+      tgId: STATE.user.tgId,
+      name: STATE.user.name,
+      phone: STATE.user.phone,
+      country: STATE.user.country || 'kz',
+      city: STATE.user.city,
+      role: 'driver',
+      car: { brand, year, num, color },
+      rating: 5.0,
+      trips: 0,
+      approved: false,
+      appliedForDriverAt: new Date().toISOString()
+    }, { merge: true });
+
+    STATE.user.role = 'driver';
+    STATE.user.car = { brand, year, num, color };
+    STATE.user.approved = false;
+
+    saveState();
+    closeModal('mo-settings');
+    showToast('✅ Заявка на водителя отправлена! Ожидайте подтверждения.', 'ok');
+    updateAllUI();
+  } catch(e) {
+    console.error(e);
+    showToast('Ошибка при отправке заявки', 'err');
+  }
+}
+
+// Показывать блок "Стать водителем" только для пассажиров
+function openModal(id) {
+  if (id === 'mo-settings' && STATE.user) {
+    document.getElementById('become-driver-block').style.display = 
+      STATE.user.role === 'passenger' ? 'block' : 'none';
+  }
+  document.getElementById(id).classList.add('open');
+}
 
 // ====================================
 // ADMIN CONFIG
 // ====================================
-const ADMIN_TG_IDS = [123456789]; // замените на ваш Telegram ID
+const ADMIN_TG_IDS = [7336812148]; // замените на ваш Telegram ID
 const APP_NAME = "Telegram Taxi";
 
 // ====================================
