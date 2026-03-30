@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Taxi Admin Panel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<style>
+:root {
+  --bg:#0a0a0a;--bg2:#111;--bg3:#181818;--card:#141414;
+  --border:#252525;--y:#f5c518;--ydim:rgba(245,197,24,.1);
+  --text:#f2f2f2;--text2:#8a8a8a;--text3:#484848;
+  --green:#22c55e;--red:#ef4444;--blue:#3b82f6;--orange:#f97316;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;min-height:100vh}
+
+/* Login */
+#login-screen{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(ellipse at 50% 40%,rgba(245,197,24,.08) 0%,transparent 60%),var(--bg);
+}
+.login-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:36px;width:100%;max-width:360px}
+.login-logo{text-align:center;margin-bottom:28px}
+.login-logo h1{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--y);letter-spacing:2px}
+.login-logo p{font-size:12px;color:var(--text3);margin-top:4px}
+.inp{
+  width:100%;padding:13px 14px;border-radius:10px;border:1.5px solid var(--border);
+  background:var(--bg3);color:var(--text);font-family:'Nunito',sans-serif;font-size:14px;
+  outline:none;margin-bottom:10px;
+}
+.inp:focus{border-color:var(--y)}
+.btn{
+  width:100%;padding:14px;border-radius:10px;border:none;font-family:'Nunito',sans-serif;
+  font-size:14px;font-weight:800;cursor:pointer;
+}
+.btn-y{background:var(--y);color:#000}
+.btn-y:hover{background:#d4a900}
+
+/* Admin layout */
+#admin-screen{display:none;min-height:100vh}
+.sidebar{
+  position:fixed;top:0;left:0;bottom:0;width:220px;
+  background:var(--bg2);border-right:1px solid var(--border);
+  padding:20px 0;overflow-y:auto;
+}
+.sidebar-logo{padding:0 16px 20px;border-bottom:1px solid var(--border);margin-bottom:12px}
+.sidebar-logo h2{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--y);letter-spacing:1px}
+.sidebar-logo span{font-size:11px;color:var(--text3)}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;
+  font-size:13px;font-weight:700;color:var(--text2);transition:all .2s;border:none;
+  background:none;width:100%;text-align:left;
+}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.active{background:var(--ydim);color:var(--y);border-right:2px solid var(--y)}
+.nav-item .ico{font-size:16px;width:22px}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px}
+
+.main-content{margin-left:220px;padding:24px;min-height:100vh}
+.page{display:none}
+.page.active{display:block}
+
+.page-header{margin-bottom:24px}
+.page-header h1{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px}
+.page-header p{font-size:13px;color:var(--text2);margin-top:4px}
+
+/* Stats cards */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-bottom:24px}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px}
+.sc-val{font-family:'Bebas Neue',sans-serif;font-size:32px;color:var(--y);letter-spacing:1px}
+.sc-lbl{font-size:11px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:4px}
+
+/* Table */
+.table-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden;margin-bottom:16px}
+.table-hdr{padding:14px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.table-hdr h3{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.5px}
+table{width:100%;border-collapse:collapse}
+th{padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid var(--border)}
+td{padding:11px 14px;font-size:13px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+
+/* Badges */
+.badge{padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700}
+.b-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2)}
+.b-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2)}
+.b-yellow{background:var(--ydim);color:var(--y);border:1px solid rgba(245,197,24,.2)}
+.b-blue{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2)}
+.b-orange{background:rgba(249,115,22,.1);color:var(--orange);border:1px solid rgba(249,115,22,.2)}
+
+/* Buttons */
+.btn-sm{padding:6px 12px;border-radius:8px;border:none;font-family:'Nunito',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:all .2s}
+.btn-approve{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3)}
+.btn-approve:hover{background:var(--green);color:#fff}
+.btn-reject{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.btn-reject:hover{background:var(--red);color:#fff}
+.btn-view{background:var(--bg3);color:var(--text2);border:1px solid var(--border)}
+.btn-view:hover{background:var(--bg);color:var(--text)}
+.btn-primary{background:var(--y);color:#000}
+.btn-primary:hover{background:#d4a900}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.btn-danger:hover{background:var(--red);color:#fff}
+
+/* Chat panel */
+.chat-layout{display:grid;grid-template-columns:280px 1fr;gap:0;height:calc(100vh - 120px);background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
+.chat-list{border-right:1px solid var(--border);overflow-y:auto}
+.chat-list-item{
+  padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;
+  transition:background .2s;
+}
+.chat-list-item:hover{background:var(--bg3)}
+.chat-list-item.active{background:var(--ydim)}
+.cli-name{font-weight:700;font-size:13px;margin-bottom:2px}
+.cli-last{font-size:11px;color:var(--text3)}
+.cli-unread{background:var(--y);color:#000;font-size:10px;font-weight:800;padding:2px 6px;border-radius:8px;float:right}
+.chat-area{display:flex;flex-direction:column}
+.chat-msgs-admin{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:8px}
+.msg{max-width:75%;padding:9px 13px;border-radius:12px;font-size:13px;line-height:1.5}
+.msg-user{background:var(--bg3);border:1px solid var(--border);align-self:flex-start;border-bottom-left-radius:4px}
+.msg-admin{background:var(--y);color:#000;align-self:flex-end;border-bottom-right-radius:4px}
+.msg-time{font-size:9px;opacity:.5;margin-top:3px}
+.chat-input-area{display:flex;gap:8px;padding:12px;border-top:1px solid var(--border)}
+.chat-input-admin{flex:1;background:var(--bg3);border:1.5px solid var(--border);border-radius:22px;padding:9px 16px;color:var(--text);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;outline:none}
+.chat-input-admin:focus{border-color:var(--y)}
+.chat-send-btn{width:38px;height:38px;border-radius:50%;background:var(--y);border:none;cursor:pointer;font-size:16px;color:#000}
+
+/* Settings toggles */
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.setting-card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:center;justify-content:space-between}
+.sc-info h4{font-size:14px;font-weight:800;margin-bottom:3px}
+.sc-info p{font-size:11px;color:var(--text2)}
+.toggle{width:44px;height:24px;border-radius:12px;background:var(--border);position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+.toggle.on{background:var(--y)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s}
+.toggle.on::after{transform:translateX(20px)}
+
+/* Toast */
+.toast{
+  position:fixed;top:20px;right:20px;background:var(--bg3);border:1px solid var(--border);
+  border-radius:10px;padding:12px 18px;font-size:13px;font-weight:700;z-index:999;
+  transition:opacity .3s;display:none;
+}
+.toast.show{display:block}
+.toast.ok{border-color:rgba(34,197,94,.4)}
+.toast.err{border-color:rgba(239,68,68,.4)}
+
+/* Filter bar */
+.filter-bar{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.filter-chip{
+  padding:7px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--card);
+  cursor:pointer;font-size:12px;font-weight:700;color:var(--text2);transition:all .2s;
+}
+.filter-chip.on{border-color:var(--y);background:var(--ydim);color:var(--y)}
+
+/* Empty */
+.empty{padding:40px;text-align:center;color:var(--text3);font-size:13px}
+
+@media(max-width:768px){
+  .sidebar{width:100%;position:relative;height:auto}
+  .main-content{margin-left:0}
+  .settings-grid{grid-template-columns:1fr}
+  .chat-layout{grid-template-columns:1fr;height:auto}
+}
+</style>
+</head>
+<body>
+
+<!-- ===== LOGIN ===== -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div style="font-size:36px;margin-bottom:8px">🚖</div>
+      <h1>TAXI ADMIN</h1>
+      <p>Панель управления</p>
+    </div>
+    <input class="inp" type="text" id="login-user" placeholder="Логин" autocomplete="username">
+    <input class="inp" type="password" id="login-pass" placeholder="Пароль" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    <button class="btn btn-y" onclick="doLogin()">Войти →</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:14px">
+      Доступ только для администраторов
+    </div>
+  </div>
+</div>
+
+<!-- ===== ADMIN PANEL ===== -->
+<div id="admin-screen">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo">
+      <h2>🚖 TAXI</h2>
+      <span>Панель администратора</span>
+    </div>
+    <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard">
+      <span class="ico">📊</span> Дашборд
+    </button>
+    <button class="nav-item" onclick="showPage('drivers')" id="nav-drivers">
+      <span class="ico">🚗</span> Водители
+      <span class="nav-badge" id="nav-pending-badge" style="display:none">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('passengers')" id="nav-passengers">
+      <span class="ico">🧳</span> Пассажиры
+    </button>
+    <button class="nav-item" onclick="showPage('orders')" id="nav-orders">
+      <span class="ico">📋</span> Заказы
+    </button>
+    <button class="nav-item" onclick="showPage('intercity')" id="nav-intercity">
+      <span class="ico">🛣️</span> Межгород
+    </button>
+    <button class="nav-item" onclick="showPage('support')" id="nav-support">
+      <span class="ico">💬</span> Поддержка
+      <span class="nav-badge" id="nav-support-badge" style="display:none">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('settings')" id="nav-settings">
+      <span class="ico">⚙️</span> Настройки
+    </button>
+    <div style="padding:16px;margin-top:auto;border-top:1px solid var(--border);margin-top:20px">
+      <button class="btn-sm btn-danger" style="width:100%;padding:8px" onclick="logout()">Выйти</button>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div class="main-content">
+
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1>Дашборд</h1>
+        <p id="dash-updated">Обновлено: —</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="sc-val" id="st-users">0</div><div class="sc-lbl">Пользователей</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-drivers">0</div><div class="sc-lbl">Водителей</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-online">0</div><div class="sc-lbl">Онлайн сейчас</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-orders-today">0</div><div class="sc-lbl">Заказов сегодня</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-orders-total">0</div><div class="sc-lbl">Всего заказов</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-pending">0</div><div class="sc-lbl">Ожидают проверки</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-hdr"><h3>Последние заказы</h3></div>
+        <div id="dash-recent-orders"><div class="empty">Загрузка...</div></div>
+      </div>
+    </div>
+
+    <!-- DRIVERS -->
+    <div class="page" id="page-drivers">
+      <div class="page-header">
+        <h1>Водители</h1>
+        <p>Управление водителями, проверка документов</p>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip on" onclick="filterDrivers('all')" id="df-all">Все</div>
+        <div class="filter-chip" onclick="filterDrivers('pending')" id="df-pending">⏳ Ожидают проверки</div>
+        <div class="filter-chip" onclick="filterDrivers('approved')" id="df-approved">✓ Активные</div>
+        <div class="filter-chip" onclick="filterDrivers('blocked')" id="df-blocked">✗ Заблокированы</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Водитель</th><th>Телефон</th><th>Авто</th><th>Рейтинг</th>
+              <th>Поездок</th><th>Статус</th><th>Подписка</th><th>Действия</th>
+            </tr>
+          </thead>
+          <tbody id="drivers-tbody">
+            <tr><td colspan="8" class="empty">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- PASSENGERS -->
+    <div class="page" id="page-passengers">
+      <div class="page-header">
+        <h1>Пассажиры</h1>
+        <p>Список зарегистрированных пользователей</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Имя</th><th>Телефон</th><th>Город</th><th>Рейтинг</th><th>Поездок</th><th>Зарег.</th><th>Действия</th></tr>
+          </thead>
+          <tbody id="passengers-tbody">
+            <tr><td colspan="7" class="empty">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="page" id="page-orders">
+      <div class="page-header">
+        <h1>Заказы</h1>
+        <p>Все заказы системы</p>
+      </div>
+      <div class="filter-bar">
+        <div class="filter-chip on" onclick="filterOrders('all')" id="of-all">Все</div>
+        <div class="filter-chip" onclick="filterOrders('searching')" id="of-searching">🔍 В поиске</div>
+        <div class="filter-chip" onclick="filterOrders('active')" id="of-active">🟢 Активные</div>
+        <div class="filter-chip" onclick="filterOrders('done')" id="of-done">✓ Завершены</div>
+        <div class="filter-chip" onclick="filterOrders('cancelled')" id="of-cancelled">✗ Отменены</div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Пассажир</th><th>Маршрут</th><th>Цена</th><th>Тип</th><th>Статус</th><th>Дата</th></tr>
+          </thead>
+          <tbody id="orders-tbody">
+            <tr><td colspan="7" class="empty">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INTERCITY -->
+    <div class="page" id="page-intercity">
+      <div class="page-header">
+        <h1>Межгородние заявки</h1>
+        <p>Заявки на межгородние поездки</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>ID</th><th>Пассажир</th><th>Откуда → Куда</th><th>Дата/Время</th><th>Тип</th><th>Цена</th><th>Статус</th><th>Звонков</th></tr>
+          </thead>
+          <tbody id="intercity-tbody">
+            <tr><td colspan="8" class="empty">Загрузка...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- SUPPORT CHAT -->
+    <div class="page" id="page-support">
+      <div class="page-header">
+        <h1>Поддержка</h1>
+        <p>Чаты с пользователями</p>
+      </div>
+      <div class="chat-layout">
+        <div class="chat-list" id="support-chat-list">
+          <div class="empty" style="padding:20px">Загрузка чатов...</div>
+        </div>
+        <div class="chat-area">
+          <div class="chat-msgs-admin" id="admin-chat-msgs">
+            <div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">Выберите чат слева</div>
+          </div>
+          <div class="chat-input-area" id="chat-input-area" style="display:none">
+            <input class="chat-input-admin" id="admin-chat-input" placeholder="Ответить..." onkeydown="if(event.key==='Enter')adminSendMsg()">
+            <button class="chat-send-btn" onclick="adminSendMsg()">➤</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SETTINGS -->
+    <div class="page" id="page-settings">
+      <div class="page-header">
+        <h1>Настройки системы</h1>
+        <p>Управление функциями приложения</p>
+      </div>
+      <div class="settings-grid">
+        <div class="setting-card">
+          <div class="sc-info">
+            <h4>🎁 Бонусная система</h4>
+            <p>30 поездок за смену = следующая смена бесплатно</p>
+          </div>
+          <div class="toggle" id="tog-bonus" onclick="toggleSetting('bonusSystem')"></div>
+        </div>
+        <div class="setting-card">
+          <div class="sc-info">
+            <h4>🛣️ Межгород</h4>
+            <p>Показывать межгородние заявки водителям</p>
+          </div>
+          <div class="toggle on" id="tog-intercity" onclick="toggleSetting('intercity')"></div>
+        </div>
+        <div class="setting-card">
+          <div class="sc-info">
+            <h4>📍 Трансляция геолокации</h4>
+            <p>Пассажиры могут транслировать геопозицию</p>
+          </div>
+          <div class="toggle on" id="tog-geo" onclick="toggleSetting('geoTracking')"></div>
+        </div>
+        <div class="setting-card">
+          <div class="sc-info">
+            <h4>💰 Платный режим водителей</h4>
+            <p>Требовать оплату за смену после пробного периода</p>
+          </div>
+          <div class="toggle on" id="tog-paid" onclick="toggleSetting('paidShifts')"></div>
+        </div>
+        <div class="setting-card">
+          <div class="sc-info">
+            <h4>💎 TON оплата</h4>
+            <p>Принимать оплату через TON блокчейн</p>
+          </div>
+          <div class="toggle on" id="tog-ton" onclick="toggleSetting('tonPayment')"></div>
+        </div>
+      </div>
+
+      <div style="margin-top:24px">
+        <div class="table-wrap">
+          <div class="table-hdr"><h3>Тарифы</h3></div>
+          <div style="padding:16px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <span style="font-size:13px;font-weight:700;width:200px">Стоимость смены (тенге):</span>
+              <input class="inp" type="number" id="set-shift-price" value="500" style="width:120px;margin-bottom:0">
+              <button class="btn-sm btn-primary" onclick="saveShiftPrice()">Сохранить</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+              <span style="font-size:13px;font-weight:700;width:200px">TON кошелёк для оплаты:</span>
+              <input class="inp" type="text" id="set-ton-wallet" placeholder="UQD..." style="flex:1;margin-bottom:0">
+              <button class="btn-sm btn-primary" onclick="saveTonWallet()">Сохранить</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <span style="font-size:13px;font-weight:700;width:200px">Бесплатный период (дней):</span>
+              <input class="inp" type="number" id="set-free-days" value="30" style="width:120px;margin-bottom:0">
+              <button class="btn-sm btn-primary" onclick="saveFreeDays()">Сохранить</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ====================================
+// FIREBASE CONFIG - ТАКОЙ ЖЕ КАК В index.html!
+// ====================================
+const firebaseConfig = {
+  apiKey: "AIzaSyDnH2Uz70mnGuQ85WzNAOsUmgGYqXwfGcg",
+  authDomain: "telegram-taxi-20164.firebaseapp.com",
+  projectId: "telegram-taxi-20164",
+  storageBucket: "telegram-taxi-20164.firebasestorage.app",
+  messagingSenderId: "713264125968",
+  appId: "1:713264125968:web:258e0e18654cbdf2ea9295",
+  measurementId: "G-X1FXFCWLP2"
+};
+
+// ====================================
+// ADMIN CREDENTIALS - СМЕНИТЕ!
+// ====================================
+const ADMIN_CREDENTIALS = {
+  'admin': 'taxiadmin2024',  // логин: пароль - ОБЯЗАТЕЛЬНО СМЕНИТЕ!
+  'support': 'support2024'
+};
+
+let db = null;
+let isFirebaseReady = false;
+let currentChatId = null;
+let unsubChat = null;
+let allDrivers = [], allOrders = [], currentDriverFilter = 'all', currentOrderFilter = 'all';
+let appSettings = {};
+
+// ====================================
+// INIT
+// ====================================
+window.addEventListener('DOMContentLoaded', () => {
+  const authed = sessionStorage.getItem('taxi_admin_auth');
+  if (authed === 'true') {
+    showAdmin();
+  }
+  initFirebase();
+});
+
+function initFirebase() {
+  try {
+    if (FB_CONFIG.apiKey === "YOUR_API_KEY") {
+      showToast('Firebase не настроен. Часть функций недоступна.', 'err');
+      return;
+    }
+    if (!firebase.apps.length) firebase.initializeApp(FB_CONFIG);
+    db = firebase.firestore();
+    isFirebaseReady = true;
+  } catch(e) { console.error(e); }
+}
+
+// ====================================
+// AUTH
+// ====================================
+function doLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  if (ADMIN_CREDENTIALS[user] && ADMIN_CREDENTIALS[user] === pass) {
+    sessionStorage.setItem('taxi_admin_auth', 'true');
+    sessionStorage.setItem('taxi_admin_user', user);
+    showAdmin();
+  } else {
+    showToast('Неверный логин или пароль', 'err');
+    document.getElementById('login-pass').value = '';
+  }
+}
+
+function logout() {
+  sessionStorage.clear();
+  document.getElementById('admin-screen').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function showAdmin() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('admin-screen').style.display = 'block';
+  loadDashboard();
+  loadSettings();
+}
+
+// ====================================
+// NAVIGATION
+// ====================================
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+
+  if (page === 'dashboard') loadDashboard();
+  else if (page === 'drivers') loadDrivers();
+  else if (page === 'passengers') loadPassengers();
+  else if (page === 'orders') loadOrders();
+  else if (page === 'intercity') loadIntercity();
+  else if (page === 'support') loadSupportChats();
+  else if (page === 'settings') loadSettings();
+}
+
+// ====================================
+// DATA HELPERS
+// ====================================
+async function getAll(collection) {
+  if (!isFirebaseReady) return getMockData(collection);
+  try {
+    const snap = await db.collection(collection).get();
+    return snap.docs.map(d => ({id: d.id, ...d.data()}));
+  } catch(e) { console.error(e); return []; }
+}
+
+async function updateDoc(collection, docId, data) {
+  if (!isFirebaseReady) { showToast('Firebase не подключён', 'err'); return; }
+  await db.collection(collection).doc(docId).set({...data, _updatedAt: new Date().toISOString()}, {merge: true});
+}
+
+function getMockData(collection) {
+  // Fallback mock data for testing without Firebase
+  if (collection === 'users') {
+    return [
+      {id:'1001', tgId:'1001', name:'Иван Иванов', phone:'+7 777 123 4567', role:'driver', approved:false, rating:5.0, trips:0, city:'Рудный', car:{brand:'Toyota',num:'A123BC',color:'Белый',year:2020}, createdAt:new Date().toISOString()},
+      {id:'1002', tgId:'1002', name:'Мария Петрова', phone:'+7 777 234 5678', role:'passenger', approved:true, rating:4.8, trips:5, city:'Рудный', createdAt:new Date().toISOString()},
+    ];
+  }
+  if (collection === 'orders') {
+    return [
+      {id:'ORD-1', passengerId:'1002', passengerName:'Мария Петрова', from:'ул. Ленина, 15', to:'пр. Победы, 7', price:1500, payMethod:'cash', status:'done', type:'city', createdAt:new Date().toISOString()},
+    ];
+  }
+  return [];
+}
+
+// ====================================
+// DASHBOARD
+// ====================================
+async function loadDashboard() {
+  document.getElementById('dash-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
+  const users = await getAll('users');
+  const orders = await getAll('orders');
+  const shifts = await getAll('driver_shifts');
+
+  const drivers = users.filter(u => u.role === 'driver');
+  const passengers = users.filter(u => u.role === 'passenger');
+  const pending = drivers.filter(d => d.approved === false);
+  const today = new Date().toDateString();
+  const ordersToday = orders.filter(o => new Date(o.createdAt).toDateString() === today);
+  const onlineShifts = shifts.filter(s => s.active && new Date(s.until) > new Date());
+
+  document.getElementById('st-users').textContent = users.length;
+  document.getElementById('st-drivers').textContent = drivers.length;
+  document.getElementById('st-online').textContent = onlineShifts.length;
+  document.getElementById('st-orders-today').textContent = ordersToday.length;
+  document.getElementById('st-orders-total').textContent = orders.length;
+  document.getElementById('st-pending').textContent = pending.length;
+
+  if (pending.length > 0) {
+    const badge = document.getElementById('nav-pending-badge');
+    badge.textContent = pending.length;
+    badge.style.display = 'inline';
+  }
+
+  // Recent orders table
+  const recent = orders.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
+  if (recent.length) {
+    document.getElementById('dash-recent-orders').innerHTML = `<table>
+      <thead><tr><th>Пассажир</th><th>Маршрут</th><th>Цена</th><th>Статус</th><th>Дата</th></tr></thead>
+      <tbody>${recent.map(o => `
+        <tr>
+          <td>${o.passengerName || '—'}</td>
+          <td style="max-width:200px;overflow:hidden;text-overflow:ellipsis">${o.from || '—'} → ${o.to || '—'}</td>
+          <td>${fmtPrice(o.price)}₸</td>
+          <td>${statusBadge(o.status)}</td>
+          <td style="color:var(--text3)">${fmtDate(o.createdAt)}</td>
+        </tr>
+      `).join('')}</tbody>
+    </table>`;
+  } else {
+    document.getElementById('dash-recent-orders').innerHTML = '<div class="empty">Заказов ещё нет</div>';
+  }
+}
+
+// ====================================
+// DRIVERS
+// ====================================
+let driverFilter = 'all';
+async function loadDrivers() {
+  const users = await getAll('users');
+  allDrivers = users.filter(u => u.role === 'driver');
+  renderDrivers();
+  const pending = allDrivers.filter(d => !d.approved);
+  if (pending.length) {
+    document.getElementById('nav-pending-badge').textContent = pending.length;
+    document.getElementById('nav-pending-badge').style.display = 'inline';
+  }
+}
+
+function filterDrivers(f) {
+  driverFilter = f;
+  document.querySelectorAll('[id^="df-"]').forEach(el => el.classList.remove('on'));
+  document.getElementById('df-' + f).classList.add('on');
+  renderDrivers();
+}
+
+function renderDrivers() {
+  let list = allDrivers;
+  if (driverFilter === 'pending') list = list.filter(d => d.approved === false);
+  else if (driverFilter === 'approved') list = list.filter(d => d.approved === true);
+  else if (driverFilter === 'blocked') list = list.filter(d => d.blocked === true);
+
+  const tbody = document.getElementById('drivers-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Нет водителей</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(d => {
+    const freeUntil = d.freeUntil ? new Date(d.freeUntil) : null;
+    const isFree = freeUntil && freeUntil > new Date();
+    const subBadge = isFree ? `<span class="badge b-green">Бесплатно до ${fmtDateShort(d.freeUntil)}</span>` : '<span class="badge b-orange">Нужна оплата</span>';
+    return `
+      <tr>
+        <td><div style="font-weight:700">${d.name}</div><div style="font-size:11px;color:var(--text3)">${d.tgId}</div></td>
+        <td>${d.phone}</td>
+        <td>${d.car ? `${d.car.brand} ${d.car.year}<br><span style="color:var(--text3);font-size:11px">${d.car.num} · ${d.car.color}</span>` : '—'}</td>
+        <td>⭐ ${fmtRating(d.rating)}</td>
+        <td>${d.trips || 0}</td>
+        <td>${d.blocked ? '<span class="badge b-red">Заблокирован</span>' : d.approved ? '<span class="badge b-green">Активен</span>' : '<span class="badge b-orange">На проверке</span>'}</td>
+        <td>${subBadge}</td>
+        <td style="white-space:nowrap;display:flex;gap:4px;flex-wrap:wrap">
+          ${!d.approved && !d.blocked ? `<button class="btn-sm btn-approve" onclick="approveDriver('${d.id}')">✓ Одобрить</button>` : ''}
+          ${d.approved && !d.blocked ? `<button class="btn-sm btn-reject" onclick="blockDriver('${d.id}')">✗ Блок</button>` : ''}
+          ${d.blocked ? `<button class="btn-sm btn-approve" onclick="unblockDriver('${d.id}')">↩ Разблок</button>` : ''}
+          <button class="btn-sm btn-view" onclick="extendFree('${d.id}')">+30д бесп.</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+async function approveDriver(driverId) {
+  if (!confirm('Одобрить водителя?')) return;
+  await updateDoc('users', driverId, {approved: true});
+  showToast('Водитель одобрен', 'ok');
+  loadDrivers();
+}
+
+async function blockDriver(driverId) {
+  if (!confirm('Заблокировать водителя?')) return;
+  await updateDoc('users', driverId, {blocked: true, approved: false});
+  showToast('Водитель заблокирован', 'ok');
+  loadDrivers();
+}
+
+async function unblockDriver(driverId) {
+  await updateDoc('users', driverId, {blocked: false, approved: true});
+  showToast('Водитель разблокирован', 'ok');
+  loadDrivers();
+}
+
+async function extendFree(driverId) {
+  const newFree = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
+  await updateDoc('users', driverId, {freeUntil: newFree, approved: true});
+  showToast('Добавлено 30 бесплатных дней', 'ok');
+  loadDrivers();
+}
+
+// ====================================
+// PASSENGERS
+// ====================================
+async function loadPassengers() {
+  const users = await getAll('users');
+  const passengers = users.filter(u => u.role === 'passenger');
+  const tbody = document.getElementById('passengers-tbody');
+  if (!passengers.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет пассажиров</td></tr>';
+    return;
+  }
+  tbody.innerHTML = passengers.map(p => `
+    <tr>
+      <td><div style="font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--text3)">${p.tgId}</div></td>
+      <td>${p.phone}</td>
+      <td>${p.city || '—'}</td>
+      <td>⭐ ${fmtRating(p.rating)}</td>
+      <td>${p.trips || 0}</td>
+      <td>${fmtDate(p.createdAt)}</td>
+      <td>
+        ${!p.blocked ? `<button class="btn-sm btn-reject" onclick="blockUser('${p.id}')">Блок</button>` : `<button class="btn-sm btn-approve" onclick="unblockUser('${p.id}')">Разблок</button>`}
+      </td>
+    </tr>
+  `).join('');
+}
+
+async function blockUser(id) {
+  if (!confirm('Заблокировать пользователя?')) return;
+  await updateDoc('users', id, {blocked: true});
+  showToast('Заблокирован', 'ok');
+  loadPassengers();
+}
+async function unblockUser(id) {
+  await updateDoc('users', id, {blocked: false});
+  showToast('Разблокирован', 'ok');
+  loadPassengers();
+}
+
+// ====================================
+// ORDERS
+// ====================================
+let orderFilter = 'all';
+async function loadOrders() {
+  allOrders = await getAll('orders');
+  renderOrders();
+}
+
+function filterOrders(f) {
+  orderFilter = f;
+  document.querySelectorAll('[id^="of-"]').forEach(el => el.classList.remove('on'));
+  document.getElementById('of-' + f).classList.add('on');
+  renderOrders();
+}
+
+function renderOrders() {
+  let list = allOrders.filter(o => o.type !== 'intercity');
+  if (orderFilter !== 'all') list = list.filter(o => o.status === orderFilter);
+  list = list.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+  const tbody = document.getElementById('orders-tbody');
+  if (!list.length) {
+    tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет заказов</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(o => `
+    <tr>
+      <td style="font-size:11px;color:var(--text3)">${o.id || '—'}</td>
+      <td>${o.passengerName || '—'}<br><span style="font-size:11px;color:var(--text3)">${o.passengerPhone || ''}</span></td>
+      <td style="max-width:180px"><div style="font-size:12px">${o.from || '—'}</div><div style="font-size:12px;color:var(--text3)">→ ${o.to || '—'}</div></td>
+      <td style="font-weight:700;color:var(--y)">${fmtPrice(o.acceptedPrice || o.price)}₸</td>
+      <td><span class="badge ${o.payMethod==='cash'?'b-blue':'b-green'}">${o.payMethod==='cash'?'Нал':'Перевод'}</span></td>
+      <td>${statusBadge(o.status)}</td>
+      <td style="color:var(--text3);font-size:11px">${fmtDate(o.createdAt)}</td>
+    </tr>
+  `).join('');
+}
+
+// ====================================
+// INTERCITY
+// ====================================
+async function loadIntercity() {
+  const orders = await getAll('orders');
+  const ic = orders.filter(o => o.type === 'intercity').sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+  const tbody = document.getElementById('intercity-tbody');
+  if (!ic.length) {
+    tbody.innerHTML = '<tr><td colspan="8" class="empty">Нет межгородних заявок</td></tr>';
+    return;
+  }
+  tbody.innerHTML = ic.map(o => `
+    <tr>
+      <td style="font-size:11px;color:var(--text3)">${o.id || '—'}</td>
+      <td>${o.passengerName || '—'}</td>
+      <td style="font-size:12px">${o.from || '—'}<br><span style="color:var(--text3)">→ ${o.to || '—'}</span></td>
+      <td>${o.date || '—'} ${o.time || '—'}</td>
+      <td>${o.icType || '—'}</td>
+      <td style="color:var(--y);font-weight:700">${fmtPrice(o.price)}₸</td>
+      <td>${statusBadge(o.status)}</td>
+      <td>${(o.contacts || []).length}</td>
+    </tr>
+  `).join('');
+}
+
+// ====================================
+// SUPPORT CHAT (ADMIN)
+// ====================================
+async function loadSupportChats() {
+  if (!isFirebaseReady) {
+    document.getElementById('support-chat-list').innerHTML = '<div class="empty">Firebase не подключён</div>';
+    return;
+  }
+  const msgs = await getAll('chats');
+  // Group by chatId
+  const chats = {};
+  msgs.forEach(m => {
+    if (!chats[m.chatId]) chats[m.chatId] = {chatId: m.chatId, msgs: [], userName: m.userName, userId: m.userId, unread: 0};
+    chats[m.chatId].msgs.push(m);
+    if (m.from === 'user') chats[m.chatId].unread++;
+  });
+
+  const list = document.getElementById('support-chat-list');
+  const chatArr = Object.values(chats).sort((a,b) => {
+    const la = a.msgs[a.msgs.length-1]?.createdAt || '';
+    const lb = b.msgs[b.msgs.length-1]?.createdAt || '';
+    return lb.localeCompare(la);
+  });
+
+  if (!chatArr.length) {
+    list.innerHTML = '<div class="empty" style="padding:20px">Нет обращений</div>';
+    return;
+  }
+
+  list.innerHTML = chatArr.map(c => {
+    const lastMsg = c.msgs.sort((a,b) => a.createdAt > b.createdAt ? 1 : -1).pop();
+    return `
+      <div class="chat-list-item" onclick="openAdminChat('${c.chatId}','${c.userName}')" id="cli-${c.chatId.replace(/[^a-z0-9]/gi,'')}">
+        <div style="display:flex;justify-content:space-between">
+          <div class="cli-name">${c.userName || 'Пользователь'}</div>
+          ${c.unread ? `<span class="cli-unread">${c.unread}</span>` : ''}
+        </div>
+        <div class="cli-last">${lastMsg?.text?.substring(0, 40) || '—'}${lastMsg?.text?.length > 40 ? '...' : ''}</div>
+      </div>
+    `;
+  }).join('');
+
+  // Update support badge
+  const totalUnread = chatArr.reduce((s, c) => s + c.unread, 0);
+  const b = document.getElementById('nav-support-badge');
+  if (totalUnread > 0) { b.textContent = totalUnread; b.style.display = 'inline'; }
+}
+
+async function openAdminChat(chatId, userName) {
+  currentChatId = chatId;
+  if (unsubChat) unsubChat();
+
+  document.getElementById('chat-input-area').style.display = 'flex';
+  document.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('active'));
+  const cli = document.getElementById('cli-' + chatId.replace(/[^a-z0-9]/gi, ''));
+  if (cli) cli.classList.add('active');
+
+  const msgsEl = document.getElementById('admin-chat-msgs');
+  msgsEl.innerHTML = '<div class="empty">Загрузка...</div>';
+
+  if (isFirebaseReady) {
+    unsubChat = db.collection('chats').where('chatId', '==', chatId)
+      .onSnapshot(snap => {
+        const msgs = snap.docs.map(d => ({id:d.id,...d.data()})).sort((a,b) => a.createdAt > b.createdAt ? 1 : -1);
+        msgsEl.innerHTML = msgs.map(m => `
+          <div class="msg ${m.from === 'user' ? 'msg-user' : 'msg-admin'}">
+            ${m.text}
+            <div class="msg-time">${fmtTime(m.createdAt)}</div>
+          </div>
+        `).join('') || '<div class="empty">Нет сообщений</div>';
+        msgsEl.scrollTop = msgsEl.scrollHeight;
+      });
+  }
+}
+
+async function adminSendMsg() {
+  if (!currentChatId) return;
+  const input = document.getElementById('admin-chat-input');
+  const text = input.value.trim();
+  if (!text || !isFirebaseReady) return;
+  input.value = '';
+  const msgId = 'MSG-ADMIN-' + Date.now();
+  await db.collection('chats').doc(msgId).set({
+    chatId: currentChatId, from: 'admin', text,
+    createdAt: new Date().toISOString(),
+  });
+}
+
+// ====================================
+// SETTINGS
+// ====================================
+async function loadSettings() {
+  if (!isFirebaseReady) return;
+  try {
+    const snap = await db.collection('settings').doc('app').get();
+    if (snap.exists) {
+      appSettings = snap.data();
+      updateSettingsUI();
+    }
+  } catch(e) {}
+}
+
+function updateSettingsUI() {
+  const toggleMap = {
+    bonusSystem: 'tog-bonus',
+    intercity: 'tog-intercity',
+    geoTracking: 'tog-geo',
+    paidShifts: 'tog-paid',
+    tonPayment: 'tog-ton',
+  };
+  Object.entries(toggleMap).forEach(([key, id]) => {
+    const tog = document.getElementById(id);
+    if (tog) tog.classList.toggle('on', appSettings[key] !== false);
+  });
+  if (appSettings.shiftPrice) document.getElementById('set-shift-price').value = appSettings.shiftPrice;
+  if (appSettings.tonWallet) document.getElementById('set-ton-wallet').value = appSettings.tonWallet;
+  if (appSettings.freeDays) document.getElementById('set-free-days').value = appSettings.freeDays;
+}
+
+async function toggleSetting(key) {
+  appSettings[key] = !(appSettings[key] !== false);
+  updateSettingsUI();
+  if (isFirebaseReady) {
+    await db.collection('settings').doc('app').set(appSettings, {merge: true});
+  }
+  showToast('Настройка сохранена', 'ok');
+}
+
+async function saveShiftPrice() {
+  const price = parseInt(document.getElementById('set-shift-price').value);
+  if (!price) return;
+  appSettings.shiftPrice = price;
+  if (isFirebaseReady) await db.collection('settings').doc('app').set({shiftPrice: price}, {merge: true});
+  showToast('Тариф сохранён', 'ok');
+}
+
+async function saveTonWallet() {
+  const wallet = document.getElementById('set-ton-wallet').value.trim();
+  if (!wallet) return;
+  appSettings.tonWallet = wallet;
+  if (isFirebaseReady) await db.collection('settings').doc('app').set({tonWallet: wallet}, {merge: true});
+  showToast('TON кошелёк сохранён', 'ok');
+}
+
+async function saveFreeDays() {
+  const days = parseInt(document.getElementById('set-free-days').value);
+  if (!days) return;
+  appSettings.freeDays = days;
+  if (isFirebaseReady) await db.collection('settings').doc('app').set({freeDays: days}, {merge: true});
+  showToast('Сохранено', 'ok');
+}
+
+// ====================================
+// UTILS
+// ====================================
+function fmtPrice(n) { return n ? Number(n).toLocaleString('ru') : '0'; }
+function fmtRating(r) { return r ? Number(r).toFixed(1) : '—'; }
+function fmtDate(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('ru-RU', {day:'2-digit',month:'2-digit',year:'numeric'});
+}
+function fmtDateShort(iso) {
+  if (!iso) return '—';
+  return new Date(iso).toLocaleDateString('ru-RU', {day:'2-digit',month:'short'});
+}
+function fmtTime(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+}
+
+function statusBadge(status) {
+  const map = {
+    searching: ['b-yellow', '🔍 Поиск'],
+    active: ['b-blue', '🟢 Активен'],
+    arrived: ['b-blue', '🚗 Прибыл'],
+    riding: ['b-green', '🛣️ В пути'],
+    done: ['b-green', '✓ Завершён'],
+    cancelled: ['b-red', '✗ Отменён'],
+  };
+  const [cls, label] = map[status] || ['', status];
+  return `<span class="badge ${cls}">${label}</span>`;
+}
+
+let toastTimer;
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (type ? ' ' + type : '');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// Auto-refresh dashboard every 60s
+setInterval(() => {
+  const active = document.querySelector('.page.active');
+  if (active && active.id === 'page-dashboard') loadDashboard();
+}, 60000);
+</script>
+</body>
+</html>
