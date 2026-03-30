@@ -1237,6 +1237,48 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 <div class="toast" id="toast"></div>
 
 <script>
+
+// ====================== STATE ======================
+// ====================== STATE ======================
+let STATE = {
+  registered: false,
+  role: 'passenger',
+  user: null,
+  // order state
+  activeOrderId: null,
+  driverActiveOrderId: null,
+  // ui
+  obRole: '',
+  addrTarget: '',
+  fromAddr: null,
+  toAddr: null,
+  icFromAddr: null,
+  icToAddr: null,
+  pax: 1,
+  childSeat: false,
+  payMethod: 'cash',
+  geoEnabled: false,
+  // driver
+  driverMode: 'city',
+  shiftActive: false,
+  shiftUntil: null,
+  shiftTrips: 0,
+  paidToday: null,
+  bonusSystemEnabled: false,
+  // rating
+  ratingFor: null,
+  ratingOrderId: null,
+  currentRating: 0,
+  currentOfferOrderId: null,
+  // intercity
+  icDate: null,
+  icTime: null,
+  icType: 0,
+  // support
+  supportChatFrom: null,
+  icContactOrderId: null,
+};
+
 // ====================== FIREBASE CONFIG ======================
 const firebaseConfig = {
   apiKey: "AIzaSyDnH2Uz70mnGuQ85WzNAOsUmgGYqXwfGcg",
@@ -1247,16 +1289,23 @@ const firebaseConfig = {
   appId: "1:713264125968:web:258e0e18654cbdf2ea9295"
 };
 
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
+let db = null;
+let isFirebaseReady = false;
 
-// ====================== STATE ======================
-let STATE = {
-  registered: false,
-  role: 'passenger',
-  user: null,
-  // ... все остальные ваши переменные
-};
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    db = firebase.firestore();
+    isFirebaseReady = true;
+    console.log("Firebase ready");
+    firebase.auth().signInAnonymously().catch(e => console.warn("Auth:", e));
+  } catch(e) {
+    console.error("Firebase init error:", e);
+    isFirebaseReady = false;
+  }
+}
 
 // ====================== BECOME DRIVER ======================
 async function becomeDriver() {
@@ -1299,14 +1348,6 @@ async function becomeDriver() {
   }
 }
 
-// Показывать блок "Стать водителем" только для пассажиров
-function openModal(id) {
-  if (id === 'mo-settings' && STATE.user) {
-    document.getElementById('become-driver-block').style.display = 
-      STATE.user.role === 'passenger' ? 'block' : 'none';
-  }
-  document.getElementById(id).classList.add('open');
-}
 
 // ====================================
 // ADMIN CONFIG
@@ -1329,8 +1370,6 @@ const TON_PER_DAY = 500; // тенге
 const FREE_MONTHS = 1;
 const BONUS_TRIPS_PER_SHIFT = 30; // за 30 поездок - след смена бесплатно
 
-let db = null;
-let isFirebaseReady = false;
 let unsubOrders = null;
 let unsubIcOrders = null;
 let unsubSupportChat = null;
@@ -1381,26 +1420,6 @@ const tg = (window.Telegram && window.Telegram.WebApp) || {
   close:()=>{}
 };
 tg.ready(); tg.expand();
-
-// ====================================
-// FIREBASE INIT
-// ====================================
-function initFirebase() {
-  try {
-    if (FB_CONFIG.apiKey === "YOUR_API_KEY") {
-      console.warn("Firebase not configured - using localStorage fallback");
-      isFirebaseReady = false;
-      return;
-    }
-    firebase.initializeApp(FB_CONFIG);
-    db = firebase.firestore();
-    isFirebaseReady = true;
-    console.log("Firebase ready");
-  } catch(e) {
-    console.error("Firebase init error:", e);
-    isFirebaseReady = false;
-  }
-}
 
 // ====================================
 // STORAGE HELPERS (Firebase + LS fallback)
@@ -2967,7 +2986,7 @@ function savePax() {
   document.getElementById('chip-pax-lbl').textContent = `${STATE.pax} пасс.`;
   closeModal('mo-pax');
 }
-function toggleChip(name) {
+function toggleChip(name) {id="set-car-bloc
   if (name === 'child') {
     STATE.childSeat = !STATE.childSeat;
     document.getElementById('chip-child').classList.toggle('on', STATE.childSeat);
@@ -2984,8 +3003,10 @@ function selPay(m) {
 // SETTINGS
 // ====================================
 function openModal(id) {
-  // Pre-fill settings
   if (id === 'mo-settings' && STATE.user) {
+    document.getElementById('become-driver-block').style.display =
+      STATE.user.role === 'passenger' ? 'block' : 'none';
+    // pre-fill settings
     document.getElementById('set-name').value = STATE.user.name || '';
     const country = STATE.user.country || 'kz';
     document.getElementById('set-country').value = country;
@@ -2993,7 +3014,6 @@ function openModal(id) {
     setTimeout(() => {
       document.getElementById('set-city').value = STATE.user.city || '';
     }, 50);
-    document.getElementById('set-car-block').style.display = STATE.user.role === 'driver' ? 'block' : 'none';
     if (STATE.user.car) {
       document.getElementById('set-car-brand').value = STATE.user.car.brand || '';
       document.getElementById('set-car-year').value = STATE.user.car.year || '';
