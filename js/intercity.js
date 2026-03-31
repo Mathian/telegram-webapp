@@ -142,6 +142,7 @@ async function createIcOrder() {
       status: 'searching',
       contacts: [],
       city: STATE.user.city,
+      icFromCity: STATE.icFromCity || STATE.user.city,
       createdAt: new Date().toISOString(),
     });
     _setVal('ic-price', '');

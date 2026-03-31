@@ -58,10 +58,13 @@ function startListeningOrders() {
     // Filter by city and driver mode
     const mode = (STATE.user && STATE.user.driverMode) || STATE.driverMode || 'city';
     const city = STATE.user ? STATE.user.city : '';
+    const icCity = STATE.driverIcCity || city;
     const filtered = orders.filter(o => {
-      if (o.city !== city) return false;
-      if (mode === 'intercity') return o.type === 'intercity';
-      return o.type !== 'intercity';
+      if (mode === 'intercity') {
+        if (o.type !== 'intercity') return false;
+        return (o.icFromCity || o.city) === icCity;
+      }
+      return o.city === city && o.type !== 'intercity';
     });
     renderDriverOrders(filtered, mode);
   });
@@ -362,21 +365,36 @@ async function finishRide() {
     showToast('🎉 Следующая смена бесплатная!', 'ok');
   }
 
-  await dbSet('users', STATE.user.tgId, {
-    trips: STATE.user.trips,
-    driverTrips: STATE.user.driverTrips,
-    bonusTrips: STATE.user.bonusTrips,
-    nextShiftFree: STATE.user.nextShiftFree || false
-  });
-
-  // Increment passenger trip count
+  // Earnings + daily stats
   try {
     const order = await dbGet('orders', orderId);
+    const earnedPrice = (order && (order.acceptedPrice || order.price)) || 0;
+    const today = new Date().toDateString();
+    if (STATE.user.lastStatsDate !== today) {
+      STATE.user.driverTripsToday = 0;
+      STATE.user.driverEarningsToday = 0;
+      STATE.user.lastStatsDate = today;
+    }
+    STATE.user.driverTripsToday = (STATE.user.driverTripsToday || 0) + 1;
+    STATE.user.driverEarnings = (STATE.user.driverEarnings || 0) + earnedPrice;
+    STATE.user.driverEarningsToday = (STATE.user.driverEarningsToday || 0) + earnedPrice;
+
     if (order && order.passengerId) {
       await dbIncrement('users', order.passengerId, 'trips');
       await dbIncrement('users', order.passengerId, 'passengerTrips');
     }
-  } catch (e) { console.warn('[finishRide] passenger trips increment:', e); }
+  } catch (e) { console.warn('[finishRide] passenger trips / earnings:', e); }
+
+  await dbSet('users', STATE.user.tgId, {
+    trips: STATE.user.trips,
+    driverTrips: STATE.user.driverTrips,
+    bonusTrips: STATE.user.bonusTrips,
+    nextShiftFree: STATE.user.nextShiftFree || false,
+    driverEarnings: STATE.user.driverEarnings || 0,
+    driverEarningsToday: STATE.user.driverEarningsToday || 0,
+    driverTripsToday: STATE.user.driverTripsToday || 0,
+    lastStatsDate: new Date().toDateString()
+  });
 
   await dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: false });
 
@@ -503,6 +521,34 @@ async function endShift() {
   showToast('Смена завершена ✅', 'ok');
 }
 
+// ---- Driver intercity city picker ----
+function openDriverIcCityPicker() {
+  const list = document.getElementById('drv-ic-city-list');
+  if (list) {
+    let html = '';
+    (window.COUNTRIES || []).forEach(c => {
+      (c.cities || []).forEach(city => {
+        const cityEsc = city.replace(/'/g, "\\'");
+        const countryEsc = c.name.replace(/'/g, "\\'");
+        html += `<button class="btn btn-out" style="margin-bottom:6px;text-align:left;width:100%" onclick="selDriverIcCity('${cityEsc}','${countryEsc}')"><strong>${city}</strong> <span style="color:var(--text3);font-size:11px">${c.name}</span></button>`;
+      });
+    });
+    list.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text3)">Нет данных</div>';
+  }
+  openModal('mo-drv-ic-city');
+}
+
+function selDriverIcCity(city, country) {
+  STATE.driverIcCity = city;
+  STATE.driverIcCountry = country;
+  saveState();
+  _setText('d-ic-city-label', city);
+  closeModal('mo-drv-ic-city');
+  stopListeningOrders();
+  startListeningOrders();
+  showToast('Город: ' + city + ' ✅', 'ok');
+}
+
 // ---- Driver mode (city / intercity) ----
 function selDrvMode(mode) {
   STATE.driverMode = mode;
@@ -510,6 +556,12 @@ function selDrvMode(mode) {
   saveState();
   document.getElementById('d-mode-city').classList.toggle('on', mode === 'city');
   document.getElementById('d-mode-ic').classList.toggle('on', mode === 'intercity');
+  const icRow = document.getElementById('d-ic-city-row');
+  if (icRow) icRow.style.display = mode === 'intercity' ? 'block' : 'none';
+  if (mode === 'intercity' && !STATE.driverIcCity && STATE.user) {
+    STATE.driverIcCity = STATE.user.city;
+    _setText('d-ic-city-label', STATE.user.city || '—');
+  }
 }
 
 // ---- Driver UI state ----
@@ -531,6 +583,15 @@ function updateDriverUI() {
   }
   _setText('d-shift-trips', STATE.shiftTrips || 0);
   _setText('d-avg-trips', u.avgShiftTrips ? u.avgShiftTrips.toFixed(1) : '—');
+  const today = new Date().toDateString();
+  if (u.lastStatsDate && u.lastStatsDate !== today) {
+    u.driverTripsToday = 0;
+    u.driverEarningsToday = 0;
+  }
+  _setText('dp-trips-today', u.driverTripsToday || 0);
+  _setText('dp-earnings-today', fmtPrice(u.driverEarningsToday || 0) + '₸');
+  _setText('dp-earnings-total', fmtPrice(u.driverEarnings || 0) + '₸');
+  _setText('d-ic-city-label', STATE.driverIcCity || u.city || '—');
 
   const bonusEnabled = STATE.bonusSystemEnabled;
   _show('d-bonus-row', bonusEnabled);

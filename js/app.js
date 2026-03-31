@@ -73,6 +73,7 @@ async function initMain() {
   }
   showLoading(false);
   updateAllUI();
+  setTimeout(() => checkSupportUnread && checkSupportUnread(), 2000);
   if (STATE.role === 'passenger') {
     showScreen('s-passenger');
     setupPassengerListeners();
@@ -107,6 +108,9 @@ function updateAllUI() {
   _setText('dp-trips', u.driverTrips || u.trips || 0);
   _setText('dp-rating', fmtRating(u.rating));
   _setText('dp-shift-trips', STATE.shiftTrips || 0);
+  _setText('dp-trips-today', u.driverTripsToday || 0);
+  _setText('dp-earnings-today', fmtPrice(u.driverEarningsToday || 0) + '₸');
+  _setText('dp-earnings-total', fmtPrice(u.driverEarnings || 0) + '₸');
   updateTonStatus();
 }
 

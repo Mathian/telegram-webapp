@@ -241,7 +241,7 @@
       </div>
       <div class="mlist">
         <button class="mi" onclick="openModal('mo-settings')"><span class="mi-ico">⚙️</span><span class="mi-txt">Настройки</span><span class="mi-arr">›</span></button>
-        <button class="mi" onclick="openSupportChat()"><span class="mi-ico">💬</span><span class="mi-txt">Поддержка</span><span class="mi-arr">›</span></button>
+        <button class="mi" id="mi-support" onclick="openSupportChat()"><span class="mi-ico">💬</span><span class="mi-txt">Поддержка</span><span class="mi-arr" id="mi-support-arr">›</span></button>
         <button class="mi" onclick="switchRole()"><span class="mi-ico">🚗</span><span class="mi-txt">Режим водителя</span><span class="mi-arr">›</span></button>
       </div>
     </div>
@@ -297,6 +297,10 @@
             <div>
               <div style="font-weight:800;color:var(--green)">🟢 Вы на линии</div>
               <div style="font-size:12px;color:var(--text2)" id="d-shift-until">—</div>
+              <div id="d-ic-city-row" style="display:none;margin-top:4px">
+                <span style="font-size:12px;color:var(--text2)">Город: </span>
+                <button style="font-size:12px;font-weight:700;color:var(--y);background:none;border:none;cursor:pointer;padding:0" onclick="openDriverIcCityPicker()"><span id="d-ic-city-label">—</span> ✎</button>
+              </div>
             </div>
             <button class="btn btn-out btn-sm" onclick="goOffline()">Завершить</button>
           </div>
@@ -352,9 +356,14 @@
         <div style="font-size:12px;color:var(--text2);margin-top:3px" id="dp-car">—</div>
       </div>
       <div class="stats" style="padding:0 2px">
-        <div class="stat"><div class="stat-val" id="dp-trips">0</div><div class="stat-lbl">Поездок</div></div>
+        <div class="stat"><div class="stat-val" id="dp-trips">0</div><div class="stat-lbl">Всего поездок</div></div>
         <div class="stat"><div class="stat-val" id="dp-rating">—</div><div class="stat-lbl">Рейтинг</div></div>
         <div class="stat"><div class="stat-val" id="dp-shift-trips">0</div><div class="stat-lbl">За смену</div></div>
+      </div>
+      <div class="stats" style="padding:0 2px;margin-top:8px">
+        <div class="stat"><div class="stat-val" id="dp-trips-today">0</div><div class="stat-lbl">Сегодня поездок</div></div>
+        <div class="stat"><div class="stat-val" id="dp-earnings-today">0₸</div><div class="stat-lbl">Заработок сегодня</div></div>
+        <div class="stat"><div class="stat-val" id="dp-earnings-total">0₸</div><div class="stat-lbl">Всего заработок</div></div>
       </div>
       <div class="ton-card" style="margin-bottom:12px">
         <div class="ton-title">TON Подписка</div>
@@ -363,7 +372,7 @@
       </div>
       <div class="mlist">
         <button class="mi" onclick="openModal('mo-settings')"><span class="mi-ico">⚙️</span><span class="mi-txt">Настройки / Данные авто</span><span class="mi-arr">›</span></button>
-        <button class="mi" onclick="openSupportChat()"><span class="mi-ico">💬</span><span class="mi-txt">Поддержка</span><span class="mi-arr">›</span></button>
+        <button class="mi" id="mi-support" onclick="openSupportChat()"><span class="mi-ico">💬</span><span class="mi-txt">Поддержка</span><span class="mi-arr" id="mi-support-arr">›</span></button>
         <button class="mi" onclick="switchRole()"><span class="mi-ico">🧳</span><span class="mi-txt">Режим пассажира</span><span class="mi-arr">›</span></button>
       </div>
     </div>
@@ -453,7 +462,10 @@
       <!-- City field (only shown for intercity) -->
       <div class="field" id="mo-city-wrap" style="display:none">
         <label>Город</label>
-        <input type="text" id="mo-city-input" placeholder="Город">
+        <div class="autocomplete-wrap">
+          <input type="text" id="mo-city-input" placeholder="Начните вводить город..." autocomplete="off">
+          <div class="autocomplete-list" id="mo-city-ac-list"></div>
+        </div>
       </div>
       <div class="field">
         <label>Адрес</label>
@@ -651,6 +663,17 @@
 <script src="js/driver.js"></script>
 <script src="js/intercity.js"></script>
 <script src="js/chat.js"></script>
+<!-- Driver IC city picker modal -->
+<div class="mo" id="mo-drv-ic-city">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">Город отправления</div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:14px">Из какого города брать межгородние заявки?</div>
+    <div id="drv-ic-city-list" style="max-height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:6px"></div>
+    <button class="btn btn-ghost" style="margin-top:10px" onclick="closeModal('mo-drv-ic-city')">Отмена</button>
+  </div>
+</div>
+
 <script src="js/payment.js"></script>
 <script src="js/rating.js"></script>
 <script src="js/app.js"></script>

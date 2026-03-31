@@ -172,12 +172,25 @@ async function loadDashboard() {
   const now = new Date();
   const onlineShifts = shifts.filter(s => s.active && new Date(s.until) > now);
 
+  const ordersDone = orders.filter(o => o.status === 'done');
+  const ordersTodayDone = ordersToday.filter(o => o.status === 'done');
+  const earningsAll    = orders.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+  const earningsAllDone = ordersDone.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+  const earningsToday  = ordersToday.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+  const earningsTodayDone = ordersTodayDone.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+
   document.getElementById('st-users').textContent = users.length;
   document.getElementById('st-drivers').textContent = drivers.length;
   document.getElementById('st-online').textContent = onlineShifts.length;
-  document.getElementById('st-orders-today').textContent = ordersToday.length;
-  document.getElementById('st-orders-total').textContent = orders.length;
   document.getElementById('st-pending').textContent = pending.length;
+  document.getElementById('st-orders-total').textContent = orders.length;
+  document.getElementById('st-orders-done').textContent = ordersDone.length;
+  document.getElementById('st-earn-all').textContent = fmtPrice(earningsAll) + '₸';
+  document.getElementById('st-earn-done').textContent = fmtPrice(earningsAllDone) + '₸';
+  document.getElementById('st-orders-today').textContent = ordersToday.length;
+  document.getElementById('st-orders-today-done').textContent = ordersTodayDone.length;
+  document.getElementById('st-earn-today').textContent = fmtPrice(earningsToday) + '₸';
+  document.getElementById('st-earn-today-done').textContent = fmtPrice(earningsTodayDone) + '₸';
   document.getElementById('dash-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
 
   const pendingSection = document.getElementById('dash-pending-section');
@@ -412,14 +425,23 @@ async function loadSupportChats() {
     return lb.localeCompare(la);
   });
   if (!chatArr.length) { list.innerHTML = '<div class="empty" style="padding:20px">Нет обращений</div>'; return; }
+  let adminReadTs = {};
+  try { adminReadTs = JSON.parse(sessionStorage.getItem('admin_read_ts') || '{}'); } catch(e) {}
+
   list.innerHTML = chatArr.map(c => {
-    const lastMsg = c.msgs.sort((a, b) => a.createdAt > b.createdAt ? 1 : -1).pop();
+    const sorted = [...c.msgs].sort((a, b) => a.createdAt > b.createdAt ? 1 : -1);
+    const lastMsg = sorted[sorted.length - 1];
+    const lastReadTs = adminReadTs[c.chatId] || '1970-01-01';
+    const unread = sorted.filter(m => m.from === 'user' && m.createdAt > lastReadTs).length;
     const safeId = c.chatId.replace(/[^a-z0-9_]/gi, '');
     return `
-      <div class="chat-list-item" onclick="openAdminChat('${c.chatId}','${c.userName}')" id="cli-${safeId}">
+      <div class="chat-list-item" onclick="openAdminChat('${c.chatId}','${c.userName || ''}','${c.userId || ''}')" id="cli-${safeId}">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div class="cli-name">${c.userName || 'Пользователь'}</div>
-          ${c.unread ? `<span class="cli-unread">${c.unread}</span>` : ''}
+          <div>
+            <div class="cli-name">${c.userName || 'Пользователь'}</div>
+            <div style="font-size:10px;color:var(--text3)">ID: ${c.userId || '—'}</div>
+          </div>
+          ${unread ? `<span class="cli-unread">${unread}</span>` : ''}
         </div>
         <div class="cli-last">${lastMsg?.text?.substring(0, 40) || '—'}</div>
       </div>`;
@@ -429,9 +451,18 @@ async function loadSupportChats() {
   if (totalUnread > 0) { b.textContent = totalUnread; b.style.display = 'inline'; } else b.style.display = 'none';
 }
 
-async function openAdminChat(chatId, userName) {
+async function openAdminChat(chatId, userName, userId) {
   currentChatId = chatId;
   if (unsubChat) unsubChat();
+  // Mark as read
+  let adminReadTs = {};
+  try { adminReadTs = JSON.parse(sessionStorage.getItem('admin_read_ts') || '{}'); } catch(e) {}
+  adminReadTs[chatId] = new Date().toISOString();
+  sessionStorage.setItem('admin_read_ts', JSON.stringify(adminReadTs));
+  // Clear unread badge
+  const safeId = chatId.replace(/[^a-z0-9_]/gi, '');
+  const cliEl = document.getElementById('cli-' + safeId);
+  if (cliEl) { const badge = cliEl.querySelector('.cli-unread'); if (badge) badge.remove(); }
   document.getElementById('chat-input-area').style.display = 'flex';
   document.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('active'));
   const cli = document.getElementById('cli-' + chatId.replace(/[^a-z0-9_]/gi, ''));

@@ -384,6 +384,35 @@ function openAddrModal(target) {
   if (cityWrap) cityWrap.style.display = isIc ? '' : 'none';
   if (isIc) {
     _setVal('mo-city-input', cur ? cur.city || '' : '');
+    const cityInput = document.getElementById('mo-city-input');
+    const cityList = document.getElementById('mo-city-ac-list');
+    if (cityInput && cityList) {
+      cityInput.oninput = function() {
+        const q = this.value.trim().toLowerCase();
+        cityList.innerHTML = '';
+        if (q.length < 2) { cityList.classList.remove('open'); return; }
+        const matches = [];
+        (window.COUNTRIES || []).forEach(c => {
+          (c.cities || []).forEach(city => {
+            if (city.toLowerCase().includes(q)) matches.push({ city, country: c.name });
+          });
+        });
+        if (!matches.length) { cityList.classList.remove('open'); return; }
+        matches.slice(0, 8).forEach(m => {
+          const li = document.createElement('div');
+          li.className = 'ac-item';
+          li.textContent = m.city + ', ' + m.country;
+          li.onclick = () => {
+            cityInput.value = m.city;
+            if (STATE.addrTarget === 'ic-from') STATE.icFromCity = m.city;
+            if (STATE.addrTarget === 'ic-to') STATE.icToCity = m.city;
+            cityList.classList.remove('open');
+          };
+          cityList.appendChild(li);
+        });
+        cityList.classList.add('open');
+      };
+    }
   }
 
   openModal('mo-address');
@@ -399,6 +428,10 @@ function saveAddr() {
   const isIc = STATE.addrTarget === 'ic-from' || STATE.addrTarget === 'ic-to';
   const cityEl = document.getElementById('mo-city-input');
   const city = isIc && cityEl ? cityEl.value.trim() : '';
+  if (isIc) {
+    if (STATE.addrTarget === 'ic-from') STATE.icFromCity = city;
+    if (STATE.addrTarget === 'ic-to') STATE.icToCity = city;
+  }
 
   if (!addr) { showToast('Введите адрес', 'err'); return; }
   if (isIc && !city) { showToast('Укажите город', 'err'); return; }
