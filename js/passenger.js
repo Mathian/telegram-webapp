@@ -277,14 +277,16 @@ async function acceptOffer(offerId, orderId) {
   }
   const offer = (order.offers || []).find(o => o.id === offerId);
   if (!offer) return;
+  // Make sure driverId is explicitly set so watchPendingOffer on driver side works
+  const acceptedDriver = { ...offer, driverId: offer.driverId };
   await dbSet('orders', orderId, {
     status: 'active',
-    acceptedDriver: offer,
+    acceptedDriver,
     acceptedPrice: offer.price,
     acceptedAt: new Date().toISOString(),
     offers: []
   });
-  showToast(`${offer.name} едет к вам! ~${offer.eta} мин ✅`, 'ok');
+  showToast(`${escHtml(offer.name)} едет к вам! ~${offer.eta} мин ✅`, 'ok');
   tg.HapticFeedback.notificationOccurred('success');
 }
 

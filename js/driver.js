@@ -9,6 +9,7 @@
 
 let _unsubDriverOrders = null;
 let _shiftTimer = null;
+const _pendingOfferListeners = {}; // orderId -> unsubFn
 
 // ---- Init ----
 function setupDriverListeners() {
@@ -163,8 +164,8 @@ function renderDriverOrders(orders, mode) {
             <div class="offer-price">${fmtPrice(o.price)}₸</div>
           </div>
           <div style="display:flex;gap:7px">
-            <button class="btn btn-ghost btn-sm" onclick="openDrvOffer('${o.id}',${o.price})">Торговаться</button>
-            <button class="btn btn-y btn-sm" onclick="drvAcceptOrder('${o.id}',${o.price},10)">Принять</button>
+            <button class="btn btn-ghost btn-sm" onclick="openDrvOffer('${o.id}',${o.price})">Предложить цену</button>
+            <button class="btn btn-y btn-sm" onclick="drvAcceptOrder('${o.id}',${o.price})">Принять</button>
           </div>
         </div>
       </div>`).join('');
@@ -231,50 +232,81 @@ async function submitOffer() {
     eta
   };
   // Replace any existing offer from this driver
+  const orderId = STATE.currentOfferOrderId;
   const newOffers = [...(order.offers || []).filter(o => o.driverId !== STATE.user.tgId), offer];
-  await dbSet('orders', STATE.currentOfferOrderId, { offers: newOffers });
+  await dbSet('orders', orderId, { offers: newOffers });
+  watchPendingOffer(orderId);
   closeModal('mo-drv-offer');
-  showToast('Предложение отправлено! ✅', 'ok');
+  showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
 }
 
-// ---- Direct accept order ----
-async function drvAcceptOrder(orderId, price, eta) {
+// ---- Watch pending offer — notify driver when passenger accepts/rejects ----
+function watchPendingOffer(orderId) {
+  if (_pendingOfferListeners[orderId]) return; // already watching
+  const unsub = onDocSnapshot('orders', orderId, order => {
+    if (!order || order.status === 'cancelled') {
+      stopWatchingOffer(orderId);
+      return;
+    }
+    if (order.status === 'active') {
+      stopWatchingOffer(orderId);
+      if (order.acceptedDriver && order.acceptedDriver.driverId === STATE.user.tgId) {
+        // Our offer was accepted!
+        if (STATE.driverActiveOrderId) return; // already on a ride
+        STATE.driverActiveOrderId = orderId;
+        saveState();
+        dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: true });
+        stopListeningOrders();
+        startListeningActiveOrder();
+        _show('d-online-box', false);
+        _show('d-active-order', true);
+        renderActiveDriverOrder(order);
+        showToast('Пассажир выбрал вас! Едьте к нему 🎉', 'ok');
+        tg.HapticFeedback.notificationOccurred('success');
+      } else {
+        showToast('Пассажир выбрал другого водителя');
+        tg.HapticFeedback.notificationOccurred('warning');
+      }
+    }
+  });
+  _pendingOfferListeners[orderId] = unsub;
+}
+
+function stopWatchingOffer(orderId) {
+  if (_pendingOfferListeners[orderId]) {
+    _pendingOfferListeners[orderId]();
+    delete _pendingOfferListeners[orderId];
+  }
+}
+
+// ---- Accept order (adds driver to offer list at passenger's price) ----
+async function drvAcceptOrder(orderId, price) {
+  if (STATE.driverActiveOrderId) {
+    showToast('У вас уже есть активный заказ', 'warn'); return;
+  }
   const order = await dbGet('orders', orderId);
   if (!order || order.status !== 'searching') {
     showToast('Заказ уже занят', 'warn'); return;
   }
-  if (STATE.driverActiveOrderId) {
-    showToast('У вас уже есть активный заказ', 'warn'); return;
+  // Check if driver already submitted an offer for this order
+  const existing = (order.offers || []).find(o => o.driverId === STATE.user.tgId);
+  if (existing) {
+    showToast('Вы уже отправили предложение', 'warn'); return;
   }
   const offer = {
-    id: 'OFF-self-' + Date.now(),
+    id: 'OFF-' + Date.now(),
     driverId: STATE.user.tgId,
     name: STATE.user.name,
     car: STATE.user.car ? `${STATE.user.car.color} ${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
     rating: STATE.user.rating,
     price,
-    eta
+    eta: 5
   };
-  await dbSet('orders', orderId, {
-    status: 'active',
-    acceptedDriver: offer,
-    acceptedPrice: price,
-    acceptedAt: new Date().toISOString(),
-    offers: []
-  });
-  STATE.driverActiveOrderId = orderId;
-  saveState();
-
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: true });
-
-  stopListeningOrders();
-  startListeningActiveOrder();
-
-  _show('d-online-box', false);
-  _show('d-active-order', true);
-  renderActiveDriverOrder({ ...order, acceptedDriver: offer, status: 'active', acceptedPrice: price });
-  showToast('Заказ принят! ✅', 'ok');
-  tg.HapticFeedback.impactOccurred('medium');
+  const newOffers = [...(order.offers || []), offer];
+  await dbSet('orders', orderId, { offers: newOffers });
+  watchPendingOffer(orderId);
+  showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
+  tg.HapticFeedback.impactOccurred('light');
 }
 
 // ---- Driver arrived ----
