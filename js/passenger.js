@@ -71,6 +71,7 @@ function handleOrderUpdate(order) {
     updateActiveRide(order);
   } else if (order.status === 'done') {
     STATE.activeOrderId = null;
+    STATE.arrivalAcknowledged = false;
     saveState();
     if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
     showOnly('p-new-order');
@@ -151,9 +152,12 @@ function updateActiveRide(order) {
   if (order.status === 'arrived') {
     if (statusEl) statusEl.textContent = '🚗 Водитель прибыл!';
     if (spillEl) spillEl.className = 'spill sp-arrived';
-    if (alertEl) alertEl.style.display = 'block';
-    _setText('p-ride-eta', '✅ Ожидает вас');
-    startArrivalSound();
+    // Only show alert and play sound if passenger hasn't acknowledged yet
+    const acknowledged = order.passengerBoarded || STATE.arrivalAcknowledged;
+    if (alertEl) alertEl.style.display = acknowledged ? 'none' : 'block';
+    _setText('p-ride-eta', acknowledged ? '🚶 Выходите' : '✅ Ожидает вас');
+    if (!acknowledged) startArrivalSound();
+    else stopArrivalSound();
   } else if (order.status === 'riding') {
     if (statusEl) statusEl.textContent = '🛣️ Поездка началась';
     if (spillEl) spillEl.className = 'spill sp-active';
@@ -300,9 +304,15 @@ async function declineOffer(offerId, orderId) {
 }
 
 // ---- Passenger boarded (hide arrival alert) ----
-function passengerBoarded() {
+async function passengerBoarded() {
   stopArrivalSound();
+  STATE.arrivalAcknowledged = true;
+  saveState();
   _show('p-arrival-alert', false);
+  // Mark in order so sound doesn't restart on re-render
+  if (STATE.activeOrderId) {
+    await dbSet('orders', STATE.activeOrderId, { passengerBoarded: true });
+  }
   showToast('Отлично! Приятной поездки 🚗', 'ok');
   tg.HapticFeedback.notificationOccurred('success');
 }
