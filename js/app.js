@@ -4,6 +4,13 @@
 
 // ---- Boot ----
 window.addEventListener('DOMContentLoaded', () => {
+  // Hard reset via URL parameter ?reset=1
+  if (new URLSearchParams(location.search).get('reset') === '1') {
+    localStorage.clear();
+    location.replace(location.pathname);
+    return;
+  }
+
   loadState();
   initFirebase();
   buildDateScroll();
