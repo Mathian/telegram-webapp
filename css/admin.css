@@ -123,12 +123,24 @@ tr:hover td{background:var(--bg3)}
 .info-box{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--blue);line-height:1.6}
 .warn-box{background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;font-size:13px;color:var(--orange);line-height:1.6}
 
+/* Mobile hamburger */
+.mob-header{display:none;position:fixed;top:0;left:0;right:0;height:52px;background:var(--bg2);border-bottom:1px solid var(--border);align-items:center;padding:0 16px;gap:12px;z-index:20}
+.mob-header h2{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--y);letter-spacing:1px;flex:1}
+.burger{background:none;border:none;cursor:pointer;padding:6px;color:var(--text);font-size:22px;line-height:1}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:18}
+.sidebar-overlay.open{display:block}
+
 @media(max-width:900px){
   .sidebar{width:180px}
   .main-content{margin-left:180px}
   .settings-grid{grid-template-columns:1fr}
 }
 @media(max-width:600px){
-  .sidebar{display:none}
-  .main-content{margin-left:0}
+  .mob-header{display:flex}
+  .sidebar{position:fixed;top:0;left:-240px;width:220px;z-index:19;transition:left .25s;padding-top:60px}
+  .sidebar.mob-open{left:0}
+  .main-content{margin-left:0;padding:16px;padding-top:68px}
+  .chat-layout{grid-template-columns:1fr;height:auto}
+  .chat-list{border-right:none;border-bottom:1px solid var(--border);max-height:200px}
+  .settings-grid{grid-template-columns:1fr}
 }

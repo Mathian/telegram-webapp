@@ -29,6 +29,25 @@ function setupDriverListeners() {
       _shiftTimer = setTimeout(() => autoEndShift(), remaining);
     }
   }
+  // Listen for approval status changes in real-time
+  if (STATE.user && STATE.user.tgId) {
+    onDocSnapshot('users', STATE.user.tgId, freshUser => {
+      if (!freshUser) return;
+      const wasApproved = STATE.user.approved;
+      STATE.user = { ...STATE.user, ...freshUser };
+      saveState();
+      updateDriverUI();
+      // Notify driver when approved
+      if (!wasApproved && freshUser.approved === true) {
+        showToast('Ваш аккаунт одобрен! Можно выходить на линию 🟢', 'ok');
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+      }
+      // Notify if blocked
+      if (!wasApproved !== true && freshUser.blocked === true) {
+        showToast('Ваш аккаунт заблокирован', 'err');
+      }
+    });
+  }
 }
 
 // ---- Listen for available orders ----
