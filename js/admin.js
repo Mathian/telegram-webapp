@@ -274,9 +274,9 @@ function renderDrivers() {
         <td>${subBadge}</td>
         <td style="white-space:nowrap">
           <div style="display:flex;gap:4px;flex-wrap:wrap">
-            ${!d.approved && !d.blocked ? `<button class="btn-sm btn-approve" onclick="approveDriver('${d.id || d.tgId}')">✓ Одобрить</button>` : ''}
-            ${d.approved && !d.blocked ? `<button class="btn-sm btn-reject" onclick="blockDriver('${d.id || d.tgId}')">✗ Блок</button>` : ''}
-            ${d.blocked ? `<button class="btn-sm btn-approve" onclick="unblockDriver('${d.id || d.tgId}')">↩ Разблок</button>` : ''}
+            ${!d.approved && !d.blockedAsDriver && !d.blocked ? `<button class="btn-sm btn-approve" onclick="approveDriver('${d.id || d.tgId}')">✓ Одобрить</button>` : ''}
+            ${!d.blockedAsDriver && !d.blocked ? `<button class="btn-sm btn-reject" onclick="blockDriver('${d.id || d.tgId}')">Блок вод.</button>` : `<button class="btn-sm btn-approve" onclick="unblockDriver('${d.id || d.tgId}')">↩ Разблок вод.</button>`}
+            ${!d.blockedAsPassenger ? `<button class="btn-sm btn-reject" onclick="blockDriverAsPassenger('${d.id || d.tgId}')">Блок пасс.</button>` : `<button class="btn-sm btn-approve" onclick="unblockDriverAsPassenger('${d.id || d.tgId}')">↩ Разблок пасс.</button>`}
             <button class="btn-sm btn-view" onclick="extendFree('${d.id || d.tgId}')">+30д</button>
           </div>
         </td>
@@ -297,15 +297,28 @@ async function approveDriver(driverId) {
 }
 
 async function blockDriver(driverId) {
-  if (!confirm('Заблокировать водителя?')) return;
-  await updateDoc('users', driverId, { blocked: true, approved: false });
-  showToast('Водитель заблокирован', 'ok');
+  if (!confirm('Заблокировать как водителя?')) return;
+  await updateDoc('users', driverId, { blockedAsDriver: true, blocked: true, approved: false });
+  showToast('Заблокирован как водитель', 'ok');
   loadDrivers();
 }
 
 async function unblockDriver(driverId) {
-  await updateDoc('users', driverId, { blocked: false, approved: true });
-  showToast('Водитель разблокирован ✅', 'ok');
+  await updateDoc('users', driverId, { blockedAsDriver: false, blocked: false, approved: true });
+  showToast('Разблокирован как водитель ✅', 'ok');
+  loadDrivers();
+}
+
+async function blockDriverAsPassenger(driverId) {
+  if (!confirm('Заблокировать как пассажира?')) return;
+  await updateDoc('users', driverId, { blockedAsPassenger: true });
+  showToast('Заблокирован как пассажир', 'ok');
+  loadDrivers();
+}
+
+async function unblockDriverAsPassenger(driverId) {
+  await updateDoc('users', driverId, { blockedAsPassenger: false });
+  showToast('Разблокирован как пассажир ✅', 'ok');
   loadDrivers();
 }
 
@@ -334,19 +347,31 @@ async function loadPassengers() {
       <td>${p.trips || 0}</td>
       <td style="font-size:11px;color:var(--text3)">${fmtDate(p.createdAt)}</td>
       <td>
-        ${!p.blocked
-          ? `<button class="btn-sm btn-reject" onclick="blockUser('${p.id || p.tgId}')">Блок</button>`
-          : `<button class="btn-sm btn-approve" onclick="unblockUser('${p.id || p.tgId}')">Разблок</button>`}
+        <div style="display:flex;gap:4px;flex-wrap:wrap">
+          ${!p.blockedAsPassenger && !p.blocked
+            ? `<button class="btn-sm btn-reject" onclick="blockUser('${p.id || p.tgId}')">Блок пасс.</button>`
+            : `<button class="btn-sm btn-approve" onclick="unblockUser('${p.id || p.tgId}')">↩ Разблок пасс.</button>`}
+          ${!p.blockedAsDriver
+            ? `<button class="btn-sm btn-reject" onclick="blockUserAsDriver('${p.id || p.tgId}')">Блок вод.</button>`
+            : `<button class="btn-sm btn-approve" onclick="unblockUserAsDriver('${p.id || p.tgId}')">↩ Разблок вод.</button>`}
+        </div>
       </td>
     </tr>`).join('');
 }
 
 async function blockUser(id) {
-  if (!confirm('Заблокировать пользователя?')) return;
-  await updateDoc('users', id, { blocked: true }); showToast('Заблокирован', 'ok'); loadPassengers();
+  if (!confirm('Заблокировать как пассажира?')) return;
+  await updateDoc('users', id, { blockedAsPassenger: true, blocked: true }); showToast('Заблокирован как пассажир', 'ok'); loadPassengers();
 }
 async function unblockUser(id) {
-  await updateDoc('users', id, { blocked: false }); showToast('Разблокирован ✅', 'ok'); loadPassengers();
+  await updateDoc('users', id, { blockedAsPassenger: false, blocked: false }); showToast('Разблокирован ✅', 'ok'); loadPassengers();
+}
+async function blockUserAsDriver(id) {
+  if (!confirm('Заблокировать как водителя?')) return;
+  await updateDoc('users', id, { blockedAsDriver: true, approved: false }); showToast('Заблокирован как водитель', 'ok'); loadPassengers();
+}
+async function unblockUserAsDriver(id) {
+  await updateDoc('users', id, { blockedAsDriver: false }); showToast('Разблокирован как водитель ✅', 'ok'); loadPassengers();
 }
 
 // ============================================================

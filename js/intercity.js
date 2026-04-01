@@ -117,7 +117,7 @@ async function createIcOrder() {
   if (!STATE.icDate) { showToast('Выберите дату', 'err'); return; }
   if (!STATE.icTime) { showToast('Выберите время', 'err'); return; }
 
-  if (STATE.user.blocked) { showToast('Ваш аккаунт заблокирован', 'err'); return; }
+  if (STATE.user.blockedAsPassenger || STATE.user.blocked) { showToast('Ваш аккаунт заблокирован', 'err'); return; }
 
   const icTypes = ['С попутчиками', 'Посылка', 'Весь салон'];
   const orderId = 'IC-' + Date.now();

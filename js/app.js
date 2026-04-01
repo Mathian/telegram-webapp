@@ -71,6 +71,16 @@ async function initMain() {
       if (fresh) { STATE.user = { ...STATE.user, ...fresh }; saveState(); }
     } catch (e) { console.warn('[initMain] reload:', e); }
   }
+  // Daily stats reset on app load
+  if (STATE.user) {
+    const today = new Date().toDateString();
+    if (STATE.user.lastStatsDate && STATE.user.lastStatsDate !== today) {
+      STATE.user.driverTripsToday = 0;
+      STATE.user.driverEarningsToday = 0;
+      STATE.user.lastStatsDate = today;
+      saveState();
+    }
+  }
   showLoading(false);
   updateAllUI();
   setTimeout(() => checkSupportUnread && checkSupportUnread(), 2000);

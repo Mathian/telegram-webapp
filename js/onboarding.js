@@ -202,8 +202,8 @@ function switchRole() {
           openModal('mo-settings');
           return;
         }
-        if (STATE.user.blocked) {
-          showToast('Ваш аккаунт заблокирован', 'err');
+        if (STATE.user.blockedAsDriver || STATE.user.blocked) {
+          showToast('Ваш аккаунт водителя заблокирован', 'err');
           return;
         }
       }
@@ -254,6 +254,23 @@ async function saveSettings() {
       }
     }
   }
+
+  // Log changes to user_history
+  try {
+    const changed = {};
+    if (updates.name && updates.name !== STATE.user.name) changed.name = { from: STATE.user.name, to: updates.name };
+    if (updates.city && updates.city !== STATE.user.city) changed.city = { from: STATE.user.city, to: updates.city };
+    if (updates.car) changed.car = { from: STATE.user.car || null, to: updates.car };
+    if (Object.keys(changed).length > 0) {
+      const histId = STATE.user.tgId + '_' + Date.now();
+      await dbSet('user_history', histId, {
+        userId: STATE.user.tgId,
+        userName: STATE.user.name,
+        changedAt: new Date().toISOString(),
+        changes: changed
+      });
+    }
+  } catch (e) { console.warn('[user_history]', e); }
 
   STATE.user = { ...STATE.user, ...updates };
   saveState();

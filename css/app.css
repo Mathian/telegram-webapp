@@ -153,6 +153,14 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .offer-price{font-family:'Bebas Neue',sans-serif;font-size:24px;color:var(--y);letter-spacing:1px}
 .offer-eta{font-size:10px;color:var(--text2);text-align:right;margin-top:1px}
 .offer-acts{display:flex;gap:7px;margin-top:9px}
+.offer-progress-wrap{height:3px;background:var(--border2);border-radius:2px;margin:7px 0 0;overflow:hidden}
+.offer-progress-bar{height:100%;background:var(--y);border-radius:2px;transition:width .5s linear}
+
+/* ---- ETA RADIO BUTTONS ---- */
+.eta-radios{display:flex;flex-wrap:wrap;gap:6px;margin-top:2px}
+.eta-r{display:flex;align-items:center;padding:7px 12px;background:var(--bg3);border:1.5px solid var(--border2);border-radius:20px;cursor:pointer;font-size:13px;font-weight:600;transition:border-color .15s,background .15s,color .15s}
+.eta-r:has(input:checked){border-color:var(--y);background:var(--ydim);color:var(--y)}
+.eta-r input{display:none}
 
 /* ---- ORDER CARDS (DRIVER) ---- */
 .ord-card{background:var(--card);border-radius:var(--r);border:1px solid var(--border2);overflow:hidden;margin-bottom:10px;animation:slideUp .25s var(--ease)}

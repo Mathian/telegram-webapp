@@ -55,6 +55,9 @@ function setupDriverListeners() {
 function startListeningOrders() {
   if (_unsubDriverOrders) return; // Already listening
   _unsubDriverOrders = onSnapshotQuery('orders', 'status', '==', 'searching', orders => {
+    // Don't disrupt open offer modal
+    const offerModal = document.getElementById('mo-drv-offer');
+    if (offerModal && offerModal.classList.contains('open')) return;
     // Filter by city and driver mode
     const mode = (STATE.user && STATE.user.driverMode) || STATE.driverMode || 'city';
     const city = STATE.user ? STATE.user.city : '';
@@ -75,6 +78,8 @@ function stopListeningOrders() {
     _unsubDriverOrders();
     _unsubDriverOrders = null;
   }
+  // Clean up any pending offer watches
+  Object.keys(_pendingOfferListeners).forEach(stopWatchingOffer);
 }
 
 // ---- Listen for active order updates ----
@@ -207,16 +212,31 @@ function renderActiveDriverOrder(order) {
 // ---- Driver offer modal ----
 function openDrvOffer(orderId, passengerPrice) {
   STATE.currentOfferOrderId = orderId;
+  STATE.currentOfferPassengerPrice = passengerPrice;
   _setText('doi-pprice', fmtPrice(passengerPrice) + '₸');
-  _setVal('doi-price', passengerPrice);
-  _setVal('doi-eta', '10');
+  _setVal('doi-price', passengerPrice + 50);
+  // Reset to 5 min radio
+  const r5 = document.querySelector('input[name="doi-eta"][value="5"]');
+  if (r5) r5.checked = true;
   openModal('mo-drv-offer');
+}
+
+function adjOfferPrice(delta) {
+  const el = document.getElementById('doi-price');
+  if (!el) return;
+  const minPrice = STATE.currentOfferPassengerPrice || 0;
+  const cur = parseInt(el.value) || (minPrice + 50);
+  el.value = Math.max(minPrice, cur + delta);
 }
 
 async function submitOffer() {
   const price = parseInt(document.getElementById('doi-price').value);
-  const eta = parseInt(document.getElementById('doi-eta').value);
-  if (!price || price <= 0) { showToast('Укажите цену', 'err'); return; }
+  const minPrice = STATE.currentOfferPassengerPrice || 0;
+  if (!price || price < minPrice) {
+    showToast(`Цена не может быть ниже ${fmtPrice(minPrice)}₸`, 'err'); return;
+  }
+  const etaEl = document.querySelector('input[name="doi-eta"]:checked');
+  const eta = etaEl ? parseInt(etaEl.value) : 5;
   if (!eta || eta < 1) { showToast('Укажите время прибытия', 'err'); return; }
 
   const order = await dbGet('orders', STATE.currentOfferOrderId);
@@ -232,7 +252,8 @@ async function submitOffer() {
     car: STATE.user.car ? `${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
     rating: STATE.user.rating,
     price,
-    eta
+    eta,
+    offerTime: new Date().toISOString()
   };
   // Replace any existing offer from this driver
   const orderId = STATE.currentOfferOrderId;
@@ -303,7 +324,8 @@ async function drvAcceptOrder(orderId, price) {
     car: STATE.user.car ? `${STATE.user.car.color} ${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
     rating: STATE.user.rating,
     price,
-    eta: 5
+    eta: 5,
+    offerTime: new Date().toISOString()
   };
   const newOffers = [...(order.offers || []), offer];
   await dbSet('orders', orderId, { offers: newOffers });
@@ -347,9 +369,25 @@ async function finishRide() {
   const orderId = STATE.driverActiveOrderId;
   showLoading(true);
 
+  // Read order first to calculate duration and finalAmount
+  let durationSeconds = null;
+  let finalAmount = 0;
+  try {
+    const orderSnap = await dbGet('orders', orderId);
+    if (orderSnap) {
+      finalAmount = orderSnap.acceptedPrice || orderSnap.price || 0;
+      if (orderSnap.startedAt) {
+        durationSeconds = Math.round((Date.now() - new Date(orderSnap.startedAt).getTime()) / 1000);
+      }
+    }
+  } catch (e) { console.warn('[finishRide] pre-read:', e); }
+
+  const finishedAt = new Date().toISOString();
   await dbSet('orders', orderId, {
     status: 'done',
-    finishedAt: new Date().toISOString()
+    finishedAt,
+    durationSeconds,
+    finalAmount
   });
 
   // Increment driver trip counters
@@ -368,7 +406,7 @@ async function finishRide() {
   // Earnings + daily stats
   try {
     const order = await dbGet('orders', orderId);
-    const earnedPrice = (order && (order.acceptedPrice || order.price)) || 0;
+    const earnedPrice = finalAmount || (order && (order.acceptedPrice || order.price)) || 0;
     const today = new Date().toDateString();
     if (STATE.user.lastStatsDate !== today) {
       STATE.user.driverTripsToday = 0;
@@ -419,7 +457,8 @@ async function driverCancelRide() {
       await dbSet('orders', STATE.driverActiveOrderId, {
         status: 'cancelled',
         cancelledBy: 'driver',
-        cancelledAt: new Date().toISOString()
+        cancelledAt: new Date().toISOString(),
+        cancelReason: ''
       });
       await dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: false });
       STATE.driverActiveOrderId = null;
@@ -438,8 +477,8 @@ async function goOnline() {
   if (!STATE.user.approved) {
     showToast('Аккаунт не подтверждён. Ожидайте проверки.', 'warn'); return;
   }
-  if (STATE.user.blocked) {
-    showToast('Ваш аккаунт заблокирован', 'err'); return;
+  if (STATE.user.blockedAsDriver || STATE.user.blocked) {
+    showToast('Ваш аккаунт водителя заблокирован', 'err'); return;
   }
   const freeUntil = STATE.user.freeUntil ? new Date(STATE.user.freeUntil) : null;
   const isFree = freeUntil && freeUntil > new Date();
@@ -501,6 +540,8 @@ async function autoEndShift() {
 async function endShift() {
   clearTimeout(_shiftTimer);
   _shiftTimer = null;
+  // Clean up any pending offer watches
+  Object.keys(_pendingOfferListeners).forEach(stopWatchingOffer);
   STATE.shiftActive = false;
   const prevShifts = STATE.user.totalShifts || 0;
   STATE.user.totalShifts = prevShifts + 1;
@@ -668,6 +709,7 @@ function openPassengerMap() {
 
 function closePassengerMap() {
   if (_mapOrderUnsub) { _mapOrderUnsub(); _mapOrderUnsub = null; }
+  if (_passengerMap) { _passengerMap.remove(); _passengerMap = null; _passengerMarker = null; }
   showScreen('s-driver');
 }
 

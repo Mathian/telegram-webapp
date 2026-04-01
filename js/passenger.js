@@ -23,6 +23,23 @@ function setupPassengerListeners() {
     _show('p-searching', false);
     _show('p-active-ride', false);
   }
+
+  // Listen for driver approval / block changes even while in passenger mode
+  if (STATE.user && STATE.user.tgId) {
+    onDocSnapshot('users', STATE.user.tgId, freshUser => {
+      if (!freshUser) return;
+      const wasApproved = STATE.user.approved;
+      STATE.user = { ...STATE.user, ...freshUser };
+      saveState();
+      if (!wasApproved && freshUser.approved === true) {
+        showToast('Ваш водительский аккаунт одобрен! 🟢', 'ok');
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
+      }
+      if (freshUser.blocked === true && !freshUser._notifiedBlocked) {
+        showToast('Ваш аккаунт заблокирован', 'err');
+      }
+    });
+  }
 }
 
 // ---- Check state on tab switch ----
@@ -103,33 +120,83 @@ function renderOffers(order) {
   const titleEl = document.getElementById('p-offers-title');
   const offers = order.offers || [];
   if (!list) return;
+
+  // Clear any running countdown
+  if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
+
   if (!offers.length) {
     if (titleEl) titleEl.style.display = 'none';
     list.innerHTML = '';
     return;
   }
   if (titleEl) titleEl.style.display = 'block';
-  list.innerHTML = offers.map(o => `
-    <div class="offer-card">
-      <div style="display:flex;align-items:center;gap:11px">
-        <div class="drv-av">🚗</div>
-        <div style="flex:1">
-          <div class="offer-name">${escHtml(o.name)}</div>
-          <div class="offer-meta">
-            <div class="stars">⭐ ${fmtRating(o.rating)}</div>
-            <div class="offer-car">${escHtml(o.car || '')}</div>
+
+  const OFFER_TTL = 10000; // 10 seconds
+
+  function buildCards() {
+    const now = Date.now();
+    list.innerHTML = offers.map(o => {
+      const hasTimer = !!o.offerTime;
+      const elapsed = hasTimer ? now - new Date(o.offerTime).getTime() : 0;
+      const remaining = hasTimer ? Math.max(0, OFFER_TTL - elapsed) : OFFER_TTL;
+      const pct = remaining / OFFER_TTL * 100;
+      return `
+        <div class="offer-card" data-oid="${o.id}">
+          <div style="display:flex;align-items:center;gap:11px">
+            <div class="drv-av">🚗</div>
+            <div style="flex:1">
+              <div class="offer-name">${escHtml(o.name)}</div>
+              <div class="offer-meta">
+                <div class="stars">⭐ ${fmtRating(o.rating)}</div>
+                <div class="offer-car">${escHtml(o.car || '')}</div>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div class="offer-price">${fmtPrice(o.price)}₸</div>
+              <div class="offer-eta">~${o.eta} мин</div>
+            </div>
           </div>
-        </div>
-        <div style="text-align:right">
-          <div class="offer-price">${fmtPrice(o.price)}₸</div>
-          <div class="offer-eta">~${o.eta} мин</div>
-        </div>
-      </div>
-      <div class="offer-acts">
-        <button class="btn btn-green btn-sm" onclick="acceptOffer('${o.id}','${order.id}')">✓ Принять</button>
-        <button class="btn btn-ghost btn-sm" onclick="declineOffer('${o.id}','${order.id}')">✗ Отклонить</button>
-      </div>
-    </div>`).join('');
+          ${hasTimer ? `<div class="offer-progress-wrap"><div class="offer-progress-bar" id="opb-${o.id}" style="width:${pct.toFixed(1)}%"></div></div>` : ''}
+          <div class="offer-acts">
+            <button class="btn btn-green btn-sm" onclick="acceptOffer('${o.id}','${order.id}')">✓ Принять</button>
+            <button class="btn btn-ghost btn-sm" onclick="declineOffer('${o.id}','${order.id}')">✗ Отклонить</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  buildCards();
+
+  // Start countdown ticker if any offer has a timer
+  if (offers.some(o => o.offerTime)) {
+    window._offerCountdown = setInterval(async () => {
+      const nowMs = Date.now();
+      let anyExpired = false;
+      offers.forEach(o => {
+        if (!o.offerTime) return;
+        const rem = Math.max(0, OFFER_TTL - (nowMs - new Date(o.offerTime).getTime()));
+        const bar = document.getElementById('opb-' + o.id);
+        if (bar) bar.style.width = (rem / OFFER_TTL * 100).toFixed(1) + '%';
+        if (rem <= 0) anyExpired = true;
+      });
+      if (anyExpired) {
+        clearInterval(window._offerCountdown);
+        window._offerCountdown = null;
+        // Remove expired offers from Firebase
+        try {
+          const freshOrder = await dbGet('orders', order.id);
+          if (!freshOrder || freshOrder.status !== 'searching') return;
+          const validOffers = (freshOrder.offers || []).filter(o => {
+            if (!o.offerTime) return true;
+            return (nowMs - new Date(o.offerTime).getTime()) < OFFER_TTL;
+          });
+          if (validOffers.length !== (freshOrder.offers || []).length) {
+            await dbSet('orders', order.id, { offers: validOffers });
+          }
+        } catch (e) { console.warn('[offerCountdown]', e); }
+      }
+    }, 500);
+  }
 }
 
 // ---- Active ride display ----
@@ -199,7 +266,7 @@ async function createOrder() {
   const price = parseInt(document.getElementById('p-price').value);
   if (!price || price <= 0) { showToast('Укажите цену', 'err'); return; }
 
-  if (STATE.user.blocked) { showToast('Ваш аккаунт заблокирован', 'err'); return; }
+  if (STATE.user.blockedAsPassenger || STATE.user.blocked) { showToast('Ваш аккаунт заблокирован', 'err'); return; }
 
   const btn = document.getElementById('btn-create-order');
   btn.disabled = true;
@@ -263,10 +330,12 @@ async function cancelOrder() {
         cancelledAt: new Date().toISOString()
       });
       STATE.activeOrderId = null;
+      STATE.arrivalAcknowledged = false;
       saveState();
       if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
       stopGeoTransmit();
     }
+    if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
     _show('p-searching', false);
     _show('p-new-order', true);
     showToast('Заказ отменён');
@@ -328,6 +397,7 @@ async function passengerCancelRide() {
         cancelledAt: new Date().toISOString()
       });
       STATE.activeOrderId = null;
+      STATE.arrivalAcknowledged = false;
       saveState();
       if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
       stopArrivalSound();
