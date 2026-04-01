@@ -76,6 +76,16 @@ async function checkActiveOrderStatus() {
 // ---- Real-time order update handler ----
 function handleOrderUpdate(order) {
   if (!order) return;
+  // Safety: ignore updates for orders that don't belong to this passenger
+  if (order.passengerId && STATE.user && order.passengerId !== STATE.user.tgId) {
+    console.warn('[handleOrderUpdate] Ignoring order from another passenger:', order.id);
+    return;
+  }
+  // Safety: ignore if this isn't the currently active order
+  if (STATE.activeOrderId && order.id && order.id !== STATE.activeOrderId) {
+    console.warn('[handleOrderUpdate] Ignoring stale order update:', order.id);
+    return;
+  }
   const showOnly = id => {
     ['p-new-order', 'p-searching', 'p-active-ride'].forEach(i => _show(i, i === id));
   };
@@ -114,12 +124,47 @@ function updateAob(order) {
   _setText('p-aob-meta', `${fmtPrice(order.price)}₸ · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}`);
 }
 
-// ---- Render offers list ----
+// ---- Build single offer card HTML ----
+function _buildOfferCard(o, orderId) {
+  const OFFER_TTL = 10000;
+  const hasTimer = !!o.offerTime;
+  const elapsed = hasTimer ? Date.now() - new Date(o.offerTime).getTime() : 0;
+  const pct = hasTimer ? Math.max(0, (OFFER_TTL - elapsed) / OFFER_TTL * 100) : 100;
+  const safeOid = escHtml(o.id);
+  const safeOrdId = escHtml(orderId);
+  return `
+    <div class="offer-card" data-oid="${safeOid}">
+      <div style="display:flex;align-items:center;gap:11px">
+        <div class="drv-av">🚗</div>
+        <div style="flex:1">
+          <div class="offer-name">${escHtml(o.name)}</div>
+          <div class="offer-meta">
+            <div class="stars">⭐ ${fmtRating(o.rating)}</div>
+            <div class="offer-car">${escHtml(o.car || '')}</div>
+          </div>
+        </div>
+        <div style="text-align:right">
+          <div class="offer-price">${fmtPrice(o.price)}₸</div>
+          <div class="offer-eta">~${o.eta} мин</div>
+        </div>
+      </div>
+      ${hasTimer ? `<div class="offer-progress-wrap"><div class="offer-progress-bar" id="opb-${safeOid}" style="width:${pct.toFixed(1)}%"></div></div>` : ''}
+      <div class="offer-acts">
+        <button class="btn btn-green btn-sm" onclick="acceptOffer('${safeOid}','${safeOrdId}')">✓ Принять</button>
+        <button class="btn btn-ghost btn-sm" onclick="declineOffer('${safeOid}','${safeOrdId}')">✗ Отклонить</button>
+      </div>
+    </div>`;
+}
+
+// ---- Render offers list (DOM-diff — no flicker, no phantom offers) ----
 function renderOffers(order) {
   const list = document.getElementById('p-offers-list');
   const titleEl = document.getElementById('p-offers-title');
   const offers = order.offers || [];
   if (!list) return;
+
+  // Safety: only render offers for the order we're currently subscribed to
+  if (STATE.activeOrderId && order.id && order.id !== STATE.activeOrderId) return;
 
   if (!offers.length) {
     if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
@@ -129,52 +174,40 @@ function renderOffers(order) {
   }
   if (titleEl) titleEl.style.display = 'block';
 
-  // Skip full rebuild if the offer IDs haven't changed — just let countdown update bars in-place
-  const currentIds = [...list.querySelectorAll('[data-oid]')].map(c => c.dataset.oid).join(',');
-  const newIds = offers.map(o => o.id).join(',');
-  if (currentIds === newIds) return; // No structural change — countdown keeps running
+  const newIds = new Set(offers.map(o => o.id));
 
-  // Stop previous countdown before rebuilding
-  if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
+  // Remove cards that are no longer in the offer list (declined / expired)
+  list.querySelectorAll('[data-oid]').forEach(card => {
+    if (!newIds.has(card.dataset.oid)) {
+      card.style.transition = 'opacity .2s, transform .2s';
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(30px)';
+      setTimeout(() => { if (card.parentNode) card.parentNode.removeChild(card); }, 220);
+    }
+  });
 
-  const OFFER_TTL = 10000; // 10 seconds
+  // Add new cards (ones not yet rendered)
+  const existingCards = {};
+  list.querySelectorAll('[data-oid]').forEach(c => existingCards[c.dataset.oid] = c);
+  offers.forEach(o => {
+    if (!existingCards[o.id]) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = _buildOfferCard(o, order.id);
+      const card = tmp.firstElementChild;
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(8px)';
+      list.appendChild(card);
+      requestAnimationFrame(() => {
+        card.style.transition = 'opacity .2s, transform .2s';
+        card.style.opacity = '1';
+        card.style.transform = 'none';
+      });
+    }
+  });
 
-  function buildCards() {
-    const now = Date.now();
-    list.innerHTML = offers.map(o => {
-      const hasTimer = !!o.offerTime;
-      const elapsed = hasTimer ? now - new Date(o.offerTime).getTime() : 0;
-      const remaining = hasTimer ? Math.max(0, OFFER_TTL - elapsed) : OFFER_TTL;
-      const pct = remaining / OFFER_TTL * 100;
-      return `
-        <div class="offer-card" data-oid="${escHtml(o.id)}">
-          <div style="display:flex;align-items:center;gap:11px">
-            <div class="drv-av">🚗</div>
-            <div style="flex:1">
-              <div class="offer-name">${escHtml(o.name)}</div>
-              <div class="offer-meta">
-                <div class="stars">⭐ ${fmtRating(o.rating)}</div>
-                <div class="offer-car">${escHtml(o.car || '')}</div>
-              </div>
-            </div>
-            <div style="text-align:right">
-              <div class="offer-price">${fmtPrice(o.price)}₸</div>
-              <div class="offer-eta">~${o.eta} мин</div>
-            </div>
-          </div>
-          ${hasTimer ? `<div class="offer-progress-wrap"><div class="offer-progress-bar" id="opb-${o.id}" style="width:${pct.toFixed(1)}%"></div></div>` : ''}
-          <div class="offer-acts">
-            <button class="btn btn-green btn-sm" onclick="acceptOffer('${o.id}','${order.id}')">✓ Принять</button>
-            <button class="btn btn-ghost btn-sm" onclick="declineOffer('${o.id}','${order.id}')">✗ Отклонить</button>
-          </div>
-        </div>`;
-    }).join('');
-  }
-
-  buildCards();
-
-  // Start countdown ticker if any offer has a timer
-  if (offers.some(o => o.offerTime)) {
+  // Countdown: update progress bars in-place, or start ticker
+  const OFFER_TTL = 10000;
+  if (!window._offerCountdown && offers.some(o => o.offerTime)) {
     window._offerCountdown = setInterval(async () => {
       const nowMs = Date.now();
       let anyExpired = false;
@@ -190,6 +223,7 @@ function renderOffers(order) {
         window._offerCountdown = null;
         // Remove expired offers from Firebase
         try {
+          if (!STATE.activeOrderId) return;
           const freshOrder = await dbGet('orders', order.id);
           if (!freshOrder || freshOrder.status !== 'searching') return;
           const validOffers = (freshOrder.offers || []).filter(o => {
@@ -277,6 +311,15 @@ async function createOrder() {
   const btn = document.getElementById('btn-create-order');
   btn.disabled = true;
   showLoading(true);
+
+  // Immediately cancel any old subscriptions and clear stale UI
+  if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
+  if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
+  const offerList = document.getElementById('p-offers-list');
+  if (offerList) offerList.innerHTML = '';
+  const offerTitle = document.getElementById('p-offers-title');
+  if (offerTitle) offerTitle.style.display = 'none';
+  STATE.activeOrderId = null; // Reset before creating new — prevents stale ID in listener
 
   const orderId = 'ORD-' + Date.now();
   const order = {

@@ -233,6 +233,7 @@ function renderDriverOrders(orders, mode) {
       const card = document.createElement('div');
       card.className = 'ord-card';
       card.dataset.oid = o.id;
+      card._fullOrder = o; // Store full order data for countdown expiry rebuild
       card.innerHTML = mode === 'intercity' ? _buildIcCardHtml(o) : _buildCityCardHtml(o);
       card.style.opacity = '0';
       card.style.transform = 'translateY(10px)';
@@ -243,7 +244,8 @@ function renderDriverOrders(orders, mode) {
         card.style.transform = 'none';
       });
     } else {
-      // Existing card — only rebuild bottom section if pending state changed
+      // Existing card — always update _fullOrder, rebuild bottom section if pending state changed
+      existingCards[o.id]._fullOrder = o;
       const wasShowingPending = !!existingCards[o.id].querySelector('.offer-progress-wrap');
       if (wasShowingPending !== hasPending) {
         existingCards[o.id].innerHTML = mode === 'intercity' ? _buildIcCardHtml(o) : _buildCityCardHtml(o);
@@ -269,11 +271,20 @@ function _startDriverOfferCountdown() {
       const bar = document.getElementById('dopb-' + orderId);
       if (bar) { bar.style.width = (rem / OFFER_TTL * 100).toFixed(1) + '%'; anyActive = true; }
       if (rem <= 0) {
-        // Offer expired — clean up pending state, rebuild card to show buttons again
+        // Offer expired — only clear pending state; the next Firestore snapshot
+        // will provide the full order data and rebuild the card correctly
         delete _pendingOfferData[orderId];
-        const card = document.querySelector(`.ord-card[data-oid="${orderId}"]`);
-        if (card) {
-          card.innerHTML = _buildCityCardHtml({ id: orderId }); // minimal rebuild; full rebuild happens on next snapshot
+        // Visually revert: hide progress bar, re-show action buttons in-place
+        const bar = document.getElementById('dopb-' + orderId);
+        const card = bar ? bar.closest('.ord-card') : null;
+        if (card && card._fullOrder) {
+          card.innerHTML = _buildCityCardHtml(card._fullOrder);
+        } else if (card) {
+          // Full order data not available — just remove the progress area so user sees it expired
+          const progWrap = card.querySelector('.offer-progress-wrap');
+          if (progWrap) progWrap.remove();
+          const pendingTag = card.querySelector('.tag-g');
+          if (pendingTag && pendingTag.textContent.includes('Ожидание')) pendingTag.remove();
         }
       }
     });
