@@ -121,15 +121,21 @@ function renderOffers(order) {
   const offers = order.offers || [];
   if (!list) return;
 
-  // Clear any running countdown
-  if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
-
   if (!offers.length) {
+    if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
     if (titleEl) titleEl.style.display = 'none';
     list.innerHTML = '';
     return;
   }
   if (titleEl) titleEl.style.display = 'block';
+
+  // Skip full rebuild if the offer IDs haven't changed — just let countdown update bars in-place
+  const currentIds = [...list.querySelectorAll('[data-oid]')].map(c => c.dataset.oid).join(',');
+  const newIds = offers.map(o => o.id).join(',');
+  if (currentIds === newIds) return; // No structural change — countdown keeps running
+
+  // Stop previous countdown before rebuilding
+  if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
 
   const OFFER_TTL = 10000; // 10 seconds
 
@@ -141,7 +147,7 @@ function renderOffers(order) {
       const remaining = hasTimer ? Math.max(0, OFFER_TTL - elapsed) : OFFER_TTL;
       const pct = remaining / OFFER_TTL * 100;
       return `
-        <div class="offer-card" data-oid="${o.id}">
+        <div class="offer-card" data-oid="${escHtml(o.id)}">
           <div style="display:flex;align-items:center;gap:11px">
             <div class="drv-av">🚗</div>
             <div style="flex:1">

@@ -135,6 +135,12 @@ tr:hover td{background:var(--bg3)}
   .main-content{margin-left:180px}
   .settings-grid{grid-template-columns:1fr}
 }
+/* Chat area mobile header */
+.chat-area-mob-hdr{display:none;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border);background:var(--bg2);flex-shrink:0}
+.chat-back-btn{background:none;border:1.5px solid var(--border);border-radius:8px;color:var(--text);font-family:'Nunito',sans-serif;font-size:13px;font-weight:700;padding:6px 12px;cursor:pointer}
+.chat-back-btn:hover{border-color:var(--y);color:var(--y)}
+.chat-area-mob-title{font-weight:700;font-size:14px;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
 @media(max-width:600px){
   .mob-header{display:flex}
   .sidebar{position:fixed;top:0;left:-240px;width:220px;z-index:19;transition:left .25s;padding-top:60px}
@@ -143,4 +149,10 @@ tr:hover td{background:var(--bg3)}
   .chat-layout{grid-template-columns:1fr;height:auto}
   .chat-list{border-right:none;border-bottom:1px solid var(--border);max-height:200px}
   .settings-grid{grid-template-columns:1fr}
+
+  /* Mobile: when chat is open — hide list, show full-screen chat */
+  .chat-layout.mob-chat-open .chat-list{display:none}
+  .chat-layout.mob-chat-open .chat-area{height:calc(100vh - 120px)}
+  .chat-layout.mob-chat-open .chat-area-mob-hdr{display:flex}
+  .chat-layout.mob-chat-open .chat-msgs-admin{flex:1;min-height:0}
 }

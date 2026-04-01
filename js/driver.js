@@ -10,6 +10,8 @@
 let _unsubDriverOrders = null;
 let _shiftTimer = null;
 const _pendingOfferListeners = {}; // orderId -> unsubFn
+const _pendingOfferData = {};      // orderId -> {offerTime, price}
+let _driverOfferCountdown = null;  // interval for countdown bars
 
 // ---- Init ----
 function setupDriverListeners() {
@@ -115,69 +117,172 @@ function handleDriverOrderUpdate(order) {
   }
 }
 
-// ---- Render available orders list ----
+// ---- Build card HTML (no DOM ops) ----
+function _buildIcCardHtml(o) {
+  return `
+    <div class="ord-hdr">
+      <div style="font-size:11px;color:var(--text3)">${fmtRelTime(o.createdAt)}</div>
+      <span class="tag tag-y">${escHtml(o.icType || 'Межгород')}</span>
+    </div>
+    <div class="ord-route">
+      <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt"><strong>${escHtml(o.from)}</strong></div></div>
+      <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt"><strong>${escHtml(o.to)}</strong></div></div>
+    </div>
+    <div class="ord-tags">
+      <span class="tag">📅 ${o.date || ''} ${o.time || ''}</span>
+      ${o.comment ? `<span class="tag">💬 ${escHtml(o.comment.substring(0,20))}${o.comment.length>20?'...':''}</span>` : ''}
+    </div>
+    <div class="ord-bot">
+      <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtPrice(o.price)}₸</div></div>
+      <button class="btn btn-blue btn-sm" onclick="icDriverContact('${o.id}')">📞 Связаться</button>
+    </div>`;
+}
+
+function _buildCityCardHtml(o) {
+  const pd = _pendingOfferData[o.id];
+  const OFFER_TTL = 10000;
+  let botHtml;
+  if (pd) {
+    const rem = Math.max(0, OFFER_TTL - (Date.now() - new Date(pd.offerTime).getTime()));
+    const pct = rem / OFFER_TTL * 100;
+    botHtml = `
+      <div class="ord-bot" style="flex-direction:column;gap:6px">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div><div style="font-size:10px;color:var(--text3)">Ваше предложение</div><div class="offer-price">${fmtPrice(pd.price)}₸</div></div>
+          <span class="tag tag-g">⏳ Ожидание пассажира</span>
+        </div>
+        <div class="offer-progress-wrap"><div class="offer-progress-bar" id="dopb-${o.id}" style="width:${pct.toFixed(1)}%"></div></div>
+      </div>`;
+  } else {
+    botHtml = `
+      <div class="ord-bot">
+        <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtPrice(o.price)}₸</div></div>
+        <div style="display:flex;gap:7px">
+          <button class="btn btn-ghost btn-sm" onclick="openDrvOffer('${o.id}',${o.price})">Предложить цену</button>
+          <button class="btn btn-y btn-sm" onclick="drvAcceptOrder('${o.id}',${o.price})">Принять</button>
+        </div>
+      </div>`;
+  }
+  return `
+    <div class="ord-hdr">
+      <div style="font-size:11px;color:var(--text3)">${fmtRelTime(o.createdAt)}</div>
+      <div class="stars">⭐ <span style="font-size:12px;color:var(--text2)">${fmtRating(o.passengerRating)} пасс.</span></div>
+    </div>
+    <div class="ord-route">
+      <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt"><strong>${escHtml(o.from)}</strong>${o.fromEntrance ? ' · Подъезд '+o.fromEntrance : ''}</div></div>
+      <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt"><strong>${escHtml(o.to)}</strong>${o.toEntrance ? ' · Подъезд '+o.toEntrance : ''}</div></div>
+    </div>
+    <div class="ord-tags">
+      <span class="tag">${o.payMethod==='cash'?'💵 Нал.':'📲 Перевод'}</span>
+      ${o.pax>1?`<span class="tag">👥 ${o.pax}</span>`:''}
+      ${o.childSeat?'<span class="tag">👶 Кресло</span>':''}
+      ${o.geoEnabled?'<span class="tag tag-g">📍 Гео</span>':''}
+      ${o.comment?`<span class="tag">💬 ${escHtml(o.comment.substring(0,20))}${o.comment.length>20?'...':''}</span>`:''}
+    </div>
+    ${botHtml}`;
+}
+
+// ---- Fade-out then remove helper ----
+function _fadeOutRemove(el) {
+  el.style.transition = 'opacity .25s, transform .25s';
+  el.style.opacity = '0';
+  el.style.transform = 'translateY(-8px)';
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 270);
+}
+
+// ---- Render available orders list (DOM-diff — no flicker) ----
 function renderDriverOrders(orders, mode) {
   const list = document.getElementById('d-orders-list');
   if (!list) return;
+
   if (!orders || !orders.length) {
-    list.innerHTML = '<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">Нет заказов. Обновляется автоматически.</div></div>';
+    const existing = list.querySelectorAll('.ord-card[data-oid]');
+    if (existing.length) {
+      existing.forEach(c => _fadeOutRemove(c));
+      setTimeout(() => {
+        if (!list.querySelector('.ord-card[data-oid]')) {
+          list.innerHTML = '<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">Нет заказов. Обновляется автоматически.</div></div>';
+        }
+      }, 300);
+    } else {
+      list.innerHTML = '<div class="empty-st"><div class="empty-ico">🔍</div><div class="empty-txt">Нет заказов. Обновляется автоматически.</div></div>';
+    }
+    _stopDriverOfferCountdown();
     return;
   }
-  if (mode === 'intercity') {
-    // Intercity: show "Contact" button instead of Accept
-    list.innerHTML = orders.map(o => `
-      <div class="ord-card">
-        <div class="ord-hdr">
-          <div style="font-size:11px;color:var(--text3)">${fmtRelTime(o.createdAt)}</div>
-          <span class="tag tag-y">${escHtml(o.icType || 'Межгород')}</span>
-        </div>
-        <div class="ord-route">
-          <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt"><strong>${escHtml(o.from)}</strong></div></div>
-          <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt"><strong>${escHtml(o.to)}</strong></div></div>
-        </div>
-        <div class="ord-tags">
-          <span class="tag">📅 ${o.date || ''} ${o.time || ''}</span>
-          ${o.comment ? `<span class="tag">💬 ${escHtml(o.comment.substring(0, 20))}${o.comment.length > 20 ? '...' : ''}</span>` : ''}
-        </div>
-        <div class="ord-bot">
-          <div>
-            <div style="font-size:10px;color:var(--text3)">Цена пассажира</div>
-            <div class="offer-price">${fmtPrice(o.price)}₸</div>
-          </div>
-          <button class="btn btn-blue btn-sm" onclick="icDriverContact('${o.id}')">📞 Связаться</button>
-        </div>
-      </div>`).join('');
-  } else {
-    // City: show Offer / Accept buttons
-    list.innerHTML = orders.map(o => `
-      <div class="ord-card">
-        <div class="ord-hdr">
-          <div style="font-size:11px;color:var(--text3)">${fmtRelTime(o.createdAt)}</div>
-          <div class="stars">⭐ <span style="font-size:12px;color:var(--text2)">${fmtRating(o.passengerRating)} пасс.</span></div>
-        </div>
-        <div class="ord-route">
-          <div class="ord-rrow"><div class="ord-rdot rdot-a"></div><div class="ord-rtxt"><strong>${escHtml(o.from)}</strong>${o.fromEntrance ? ' · Подъезд ' + o.fromEntrance : ''}</div></div>
-          <div class="ord-rrow"><div class="ord-rdot rdot-b"></div><div class="ord-rtxt"><strong>${escHtml(o.to)}</strong>${o.toEntrance ? ' · Подъезд ' + o.toEntrance : ''}</div></div>
-        </div>
-        <div class="ord-tags">
-          <span class="tag">${o.payMethod === 'cash' ? '💵 Нал.' : '📲 Перевод'}</span>
-          ${o.pax > 1 ? `<span class="tag">👥 ${o.pax}</span>` : ''}
-          ${o.childSeat ? '<span class="tag">👶 Кресло</span>' : ''}
-          ${o.geoEnabled ? '<span class="tag tag-g">📍 Гео</span>' : ''}
-          ${o.comment ? `<span class="tag">💬 ${escHtml(o.comment.substring(0, 20))}${o.comment.length > 20 ? '...' : ''}</span>` : ''}
-        </div>
-        <div class="ord-bot">
-          <div>
-            <div style="font-size:10px;color:var(--text3)">Цена пассажира</div>
-            <div class="offer-price">${fmtPrice(o.price)}₸</div>
-          </div>
-          <div style="display:flex;gap:7px">
-            <button class="btn btn-ghost btn-sm" onclick="openDrvOffer('${o.id}',${o.price})">Предложить цену</button>
-            <button class="btn btn-y btn-sm" onclick="drvAcceptOrder('${o.id}',${o.price})">Принять</button>
-          </div>
-        </div>
-      </div>`).join('');
+
+  // Remove empty-state placeholder if present
+  const emptyEl = list.querySelector('.empty-st');
+  if (emptyEl) emptyEl.remove();
+
+  const newIds = new Set(orders.map(o => o.id));
+
+  // Remove cards no longer in list
+  list.querySelectorAll('.ord-card[data-oid]').forEach(card => {
+    if (!newIds.has(card.dataset.oid)) _fadeOutRemove(card);
+  });
+
+  // Add new cards / rebuild cards whose pending-offer state changed
+  const existingCards = {};
+  list.querySelectorAll('.ord-card[data-oid]').forEach(c => existingCards[c.dataset.oid] = c);
+
+  orders.forEach(o => {
+    const hasPending = !!_pendingOfferData[o.id];
+    if (!existingCards[o.id]) {
+      // New card — create and fade in
+      const card = document.createElement('div');
+      card.className = 'ord-card';
+      card.dataset.oid = o.id;
+      card.innerHTML = mode === 'intercity' ? _buildIcCardHtml(o) : _buildCityCardHtml(o);
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(10px)';
+      list.appendChild(card);
+      requestAnimationFrame(() => {
+        card.style.transition = 'opacity .25s, transform .25s';
+        card.style.opacity = '1';
+        card.style.transform = 'none';
+      });
+    } else {
+      // Existing card — only rebuild bottom section if pending state changed
+      const wasShowingPending = !!existingCards[o.id].querySelector('.offer-progress-wrap');
+      if (wasShowingPending !== hasPending) {
+        existingCards[o.id].innerHTML = mode === 'intercity' ? _buildIcCardHtml(o) : _buildCityCardHtml(o);
+      }
+    }
+  });
+
+  // Manage countdown for pending offers
+  if (Object.keys(_pendingOfferData).length > 0) {
+    _startDriverOfferCountdown();
   }
+}
+
+// ---- Driver offer countdown ticker ----
+function _startDriverOfferCountdown() {
+  if (_driverOfferCountdown) return;
+  const OFFER_TTL = 10000;
+  _driverOfferCountdown = setInterval(() => {
+    const nowMs = Date.now();
+    let anyActive = false;
+    Object.entries(_pendingOfferData).forEach(([orderId, pd]) => {
+      const rem = Math.max(0, OFFER_TTL - (nowMs - new Date(pd.offerTime).getTime()));
+      const bar = document.getElementById('dopb-' + orderId);
+      if (bar) { bar.style.width = (rem / OFFER_TTL * 100).toFixed(1) + '%'; anyActive = true; }
+      if (rem <= 0) {
+        // Offer expired — clean up pending state, rebuild card to show buttons again
+        delete _pendingOfferData[orderId];
+        const card = document.querySelector(`.ord-card[data-oid="${orderId}"]`);
+        if (card) {
+          card.innerHTML = _buildCityCardHtml({ id: orderId }); // minimal rebuild; full rebuild happens on next snapshot
+        }
+      }
+    });
+    if (!anyActive && Object.keys(_pendingOfferData).length === 0) _stopDriverOfferCountdown();
+  }, 500);
+}
+
+function _stopDriverOfferCountdown() {
+  if (_driverOfferCountdown) { clearInterval(_driverOfferCountdown); _driverOfferCountdown = null; }
 }
 
 // ---- Render active driver order ----
@@ -259,6 +364,8 @@ async function submitOffer() {
   const orderId = STATE.currentOfferOrderId;
   const newOffers = [...(order.offers || []).filter(o => o.driverId !== STATE.user.tgId), offer];
   await dbSet('orders', orderId, { offers: newOffers });
+  // Store pending offer data for countdown display
+  _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
   watchPendingOffer(orderId);
   closeModal('mo-drv-offer');
   showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
@@ -301,6 +408,11 @@ function stopWatchingOffer(orderId) {
     _pendingOfferListeners[orderId]();
     delete _pendingOfferListeners[orderId];
   }
+  // Clear pending offer data so card reverts to normal buttons
+  if (_pendingOfferData[orderId]) {
+    delete _pendingOfferData[orderId];
+    if (Object.keys(_pendingOfferData).length === 0) _stopDriverOfferCountdown();
+  }
 }
 
 // ---- Accept order (adds driver to offer list at passenger's price) ----
@@ -329,6 +441,8 @@ async function drvAcceptOrder(orderId, price) {
   };
   const newOffers = [...(order.offers || []), offer];
   await dbSet('orders', orderId, { offers: newOffers });
+  // Store pending offer data for countdown display
+  _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
   watchPendingOffer(orderId);
   showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
   tg.HapticFeedback.impactOccurred('light');

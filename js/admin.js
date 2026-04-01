@@ -453,11 +453,13 @@ async function loadSupportChats() {
   let adminReadTs = {};
   try { adminReadTs = JSON.parse(sessionStorage.getItem('admin_read_ts') || '{}'); } catch(e) {}
 
+  let totalUnread = 0;
   list.innerHTML = chatArr.map(c => {
     const sorted = [...c.msgs].sort((a, b) => a.createdAt > b.createdAt ? 1 : -1);
     const lastMsg = sorted[sorted.length - 1];
     const lastReadTs = adminReadTs[c.chatId] || '1970-01-01';
     const unread = sorted.filter(m => m.from === 'user' && m.createdAt > lastReadTs).length;
+    totalUnread += unread;
     const safeId = c.chatId.replace(/[^a-z0-9_]/gi, '');
     return `
       <div class="chat-list-item" onclick="openAdminChat('${c.chatId}','${c.userName || ''}','${c.userId || ''}')" id="cli-${safeId}">
@@ -471,7 +473,6 @@ async function loadSupportChats() {
         <div class="cli-last">${lastMsg?.text?.substring(0, 40) || '—'}</div>
       </div>`;
   }).join('');
-  const totalUnread = chatArr.reduce((s, c) => s + c.unread, 0);
   const b = document.getElementById('nav-support-badge');
   if (totalUnread > 0) { b.textContent = totalUnread; b.style.display = 'inline'; } else b.style.display = 'none';
 }
@@ -484,14 +485,23 @@ async function openAdminChat(chatId, userName, userId) {
   try { adminReadTs = JSON.parse(sessionStorage.getItem('admin_read_ts') || '{}'); } catch(e) {}
   adminReadTs[chatId] = new Date().toISOString();
   sessionStorage.setItem('admin_read_ts', JSON.stringify(adminReadTs));
-  // Clear unread badge
+  // Clear unread badge from list item
   const safeId = chatId.replace(/[^a-z0-9_]/gi, '');
   const cliEl = document.getElementById('cli-' + safeId);
   if (cliEl) { const badge = cliEl.querySelector('.cli-unread'); if (badge) badge.remove(); }
+  // Recalculate and update nav badge
+  _refreshAdminSupportBadge();
   document.getElementById('chat-input-area').style.display = 'flex';
   document.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('active'));
-  const cli = document.getElementById('cli-' + chatId.replace(/[^a-z0-9_]/gi, ''));
+  const cli = document.getElementById('cli-' + safeId);
   if (cli) cli.classList.add('active');
+  // Mobile: show full-screen chat with back button
+  const chatLayout = document.querySelector('.chat-layout');
+  if (chatLayout) chatLayout.classList.add('mob-chat-open');
+  const mobHdr = document.getElementById('chat-area-mob-hdr');
+  if (mobHdr) mobHdr.style.display = '';  // let CSS control it via media query
+  const mobTitle = document.getElementById('chat-area-mob-title');
+  if (mobTitle) mobTitle.textContent = userName || 'Чат';
   const msgsEl = document.getElementById('admin-chat-msgs');
   msgsEl.innerHTML = '<div class="empty">Загрузка...</div>';
   if (isFirebaseReady) {
@@ -514,6 +524,27 @@ async function adminSendMsg() {
   input.value = '';
   const msgId = 'MSG-ADMIN-' + Date.now();
   await db.collection('chats').doc(msgId).set({ chatId: currentChatId, from: 'admin', text, createdAt: new Date().toISOString() });
+}
+
+function closeMobileChat() {
+  const chatLayout = document.querySelector('.chat-layout');
+  if (chatLayout) chatLayout.classList.remove('mob-chat-open');
+  currentChatId = null;
+  if (unsubChat) { unsubChat(); unsubChat = null; }
+  document.getElementById('chat-input-area').style.display = 'none';
+  document.getElementById('admin-chat-msgs').innerHTML = '<div style="text-align:center;color:var(--text3);padding:40px;font-size:13px">Выберите чат слева</div>';
+  document.querySelectorAll('.chat-list-item').forEach(el => el.classList.remove('active'));
+}
+
+function _refreshAdminSupportBadge() {
+  // Count remaining unread badges in the list
+  let total = 0;
+  document.querySelectorAll('.cli-unread').forEach(b => total += parseInt(b.textContent) || 0);
+  const navBadge = document.getElementById('nav-support-badge');
+  if (navBadge) {
+    if (total > 0) { navBadge.textContent = total; navBadge.style.display = 'inline'; }
+    else navBadge.style.display = 'none';
+  }
 }
 
 // ============================================================
