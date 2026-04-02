@@ -4,14 +4,17 @@
 
 // ---- Boot ----
 window.addEventListener('DOMContentLoaded', () => {
-  // Hard reset via URL parameter ?reset=1
-  if (new URLSearchParams(location.search).get('reset') === '1') {
-    localStorage.clear();
-    location.replace(location.pathname);
-    return;
+  loadState();
+
+  // Read ?uid= from URL (personalized link sent by bot) and persist it
+  const urlUid = new URLSearchParams(location.search).get('uid');
+  if (urlUid && urlUid.length === 64) {
+    STATE.uid = urlUid;
+    saveState();
+    // Clean uid from URL bar (no reload)
+    history.replaceState(null, '', location.pathname);
   }
 
-  loadState();
   initFirebase();
   buildDateScroll();
   buildTimeWheel();
@@ -49,12 +52,32 @@ window.addEventListener('DOMContentLoaded', () => {
   loadAppSettings();
 
   // Boot sequence
-  setTimeout(() => {
+  setTimeout(async () => {
     _show('s-splash', false);
     document.getElementById('s-splash').classList.remove('active');
+
+    if (!STATE.uid) {
+      // No personalized link — user must open via bot
+      showScreen('s-no-uid');
+      return;
+    }
+
     if (STATE.registered && STATE.user) {
       initMain();
     } else {
+      // Try auto-login: check if uid already has a profile in Firebase
+      try {
+        const existing = await dbGet('users', STATE.uid);
+        if (existing) {
+          STATE.user = existing;
+          STATE.role = existing.role || 'passenger';
+          STATE.registered = true;
+          saveState();
+          initMain();
+          return;
+        }
+      } catch (e) { console.warn('[boot] auto-login check:', e); }
+      // No profile yet — show onboarding
       prefillTg();
       showScreen('s-onboard');
     }
@@ -65,9 +88,9 @@ window.addEventListener('DOMContentLoaded', () => {
 async function initMain() {
   showLoading(true);
   // Refresh user data from Firebase
-  if (isFirebaseReady && STATE.user && STATE.user.tgId) {
+  if (isFirebaseReady && STATE.uid) {
     try {
-      const fresh = await dbGet('users', STATE.user.tgId);
+      const fresh = await dbGet('users', STATE.uid);
       if (fresh) { STATE.user = { ...STATE.user, ...fresh }; saveState(); }
     } catch (e) { console.warn('[initMain] reload:', e); }
   }

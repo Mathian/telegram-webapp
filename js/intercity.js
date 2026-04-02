@@ -127,7 +127,7 @@ async function createIcOrder() {
   try {
     await dbSet('orders', orderId, {
       id: orderId,
-      passengerId: STATE.user.tgId,
+      passengerId: STATE.uid,
       passengerName: STATE.user.name,
       passengerPhone: STATE.user.phone,
       passengerRating: STATE.user.rating,
@@ -169,7 +169,7 @@ async function renderIcMyOrders() {
   const list = document.getElementById('ic-my-orders-list');
   if (!list) return;
   try {
-    const orders = await dbQuery('orders', 'passengerId', '==', STATE.user.tgId);
+    const orders = await dbQuery('orders', 'passengerId', '==', STATE.uid);
     const ic = orders
       .filter(o => o.type === 'intercity')
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
@@ -254,8 +254,8 @@ async function icSelectDriver(orderId, driverId) {
     finishedAt: new Date().toISOString()
   });
   // Increment passenger trips
-  await dbIncrement('users', STATE.user.tgId, 'trips');
-  await dbIncrement('users', STATE.user.tgId, 'passengerTrips');
+  await dbIncrement('users', STATE.uid, 'trips');
+  await dbIncrement('users', STATE.uid, 'passengerTrips');
   // Increment driver trips
   await dbIncrement('users', driverId, 'trips');
   await dbIncrement('users', driverId, 'driverTrips');
@@ -290,9 +290,9 @@ async function icDriverContact(orderId) {
 
   // Register contact
   const contacts = order.contacts || [];
-  if (!contacts.find(c => c.driverId === STATE.user.tgId)) {
+  if (!contacts.find(c => c.driverId === STATE.uid)) {
     contacts.push({
-      driverId: STATE.user.tgId,
+      driverId: STATE.uid,
       name: STATE.user.name,
       phone: STATE.user.phone,
       contactedAt: new Date().toISOString()

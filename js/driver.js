@@ -12,6 +12,8 @@ let _shiftTimer = null;
 const _pendingOfferListeners = {}; // orderId -> unsubFn
 const _pendingOfferData = {};      // orderId -> {offerTime, price}
 let _driverOfferCountdown = null;  // interval for countdown bars
+let _lastKnownOrders = [];         // latest orders from snapshot — for forced re-renders
+let _lastKnownMode = 'city';
 
 // ---- Init ----
 function setupDriverListeners() {
@@ -33,8 +35,8 @@ function setupDriverListeners() {
     }
   }
   // Listen for approval status changes in real-time
-  if (STATE.user && STATE.user.tgId) {
-    onDocSnapshot('users', STATE.user.tgId, freshUser => {
+  if (STATE.uid) {
+    onDocSnapshot('users', STATE.uid, freshUser => {
       if (!freshUser) return;
       const wasApproved = STATE.user.approved;
       STATE.user = { ...STATE.user, ...freshUser };
@@ -192,6 +194,10 @@ function _fadeOutRemove(el) {
 
 // ---- Render available orders list (DOM-diff — no flicker) ----
 function renderDriverOrders(orders, mode) {
+  // Always keep a reference to the latest data for forced re-renders
+  _lastKnownOrders = orders || [];
+  _lastKnownMode = mode || 'city';
+
   const list = document.getElementById('d-orders-list');
   if (!list) return;
 
@@ -233,7 +239,6 @@ function renderDriverOrders(orders, mode) {
       const card = document.createElement('div');
       card.className = 'ord-card';
       card.dataset.oid = o.id;
-      card._fullOrder = o; // Store full order data for countdown expiry rebuild
       card.innerHTML = mode === 'intercity' ? _buildIcCardHtml(o) : _buildCityCardHtml(o);
       card.style.opacity = '0';
       card.style.transform = 'translateY(10px)';
@@ -244,8 +249,7 @@ function renderDriverOrders(orders, mode) {
         card.style.transform = 'none';
       });
     } else {
-      // Existing card — always update _fullOrder, rebuild bottom section if pending state changed
-      existingCards[o.id]._fullOrder = o;
+      // Existing card — rebuild bottom section if pending state changed
       const wasShowingPending = !!existingCards[o.id].querySelector('.offer-progress-wrap');
       if (wasShowingPending !== hasPending) {
         existingCards[o.id].innerHTML = mode === 'intercity' ? _buildIcCardHtml(o) : _buildCityCardHtml(o);
@@ -265,30 +269,19 @@ function _startDriverOfferCountdown() {
   const OFFER_TTL = 10000;
   _driverOfferCountdown = setInterval(() => {
     const nowMs = Date.now();
-    let anyActive = false;
+    const expiredIds = [];
     Object.entries(_pendingOfferData).forEach(([orderId, pd]) => {
       const rem = Math.max(0, OFFER_TTL - (nowMs - new Date(pd.offerTime).getTime()));
       const bar = document.getElementById('dopb-' + orderId);
-      if (bar) { bar.style.width = (rem / OFFER_TTL * 100).toFixed(1) + '%'; anyActive = true; }
-      if (rem <= 0) {
-        // Offer expired — only clear pending state; the next Firestore snapshot
-        // will provide the full order data and rebuild the card correctly
-        delete _pendingOfferData[orderId];
-        // Visually revert: hide progress bar, re-show action buttons in-place
-        const bar = document.getElementById('dopb-' + orderId);
-        const card = bar ? bar.closest('.ord-card') : null;
-        if (card && card._fullOrder) {
-          card.innerHTML = _buildCityCardHtml(card._fullOrder);
-        } else if (card) {
-          // Full order data not available — just remove the progress area so user sees it expired
-          const progWrap = card.querySelector('.offer-progress-wrap');
-          if (progWrap) progWrap.remove();
-          const pendingTag = card.querySelector('.tag-g');
-          if (pendingTag && pendingTag.textContent.includes('Ожидание')) pendingTag.remove();
-        }
-      }
+      if (bar) bar.style.width = (rem / OFFER_TTL * 100).toFixed(1) + '%';
+      if (rem <= 0) expiredIds.push(orderId);
     });
-    if (!anyActive && Object.keys(_pendingOfferData).length === 0) _stopDriverOfferCountdown();
+    expiredIds.forEach(orderId => {
+      // Offer expired without response — clean up and rebuild card with buttons
+      stopWatchingOffer(orderId); // clears _pendingOfferData[orderId]
+      renderDriverOrders(_lastKnownOrders, _lastKnownMode);
+    });
+    if (Object.keys(_pendingOfferData).length === 0) _stopDriverOfferCountdown();
   }, 500);
 }
 
@@ -363,7 +356,7 @@ async function submitOffer() {
   }
   const offer = {
     id: 'OFF-' + Date.now(),
-    driverId: STATE.user.tgId,
+    driverId: STATE.uid,
     name: STATE.user.name,
     car: STATE.user.car ? `${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
     rating: STATE.user.rating,
@@ -373,7 +366,7 @@ async function submitOffer() {
   };
   // Replace any existing offer from this driver
   const orderId = STATE.currentOfferOrderId;
-  const newOffers = [...(order.offers || []).filter(o => o.driverId !== STATE.user.tgId), offer];
+  const newOffers = [...(order.offers || []).filter(o => o.driverId !== STATE.uid), offer];
   await dbSet('orders', orderId, { offers: newOffers });
   // Store pending offer data for countdown display
   _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
@@ -382,7 +375,7 @@ async function submitOffer() {
   showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
 }
 
-// ---- Watch pending offer — notify driver when passenger accepts/rejects ----
+// ---- Watch pending offer — notify driver when passenger accepts/rejects/declines ----
 function watchPendingOffer(orderId) {
   if (_pendingOfferListeners[orderId]) return; // already watching
   const unsub = onDocSnapshot('orders', orderId, order => {
@@ -392,22 +385,35 @@ function watchPendingOffer(orderId) {
     }
     if (order.status === 'active') {
       stopWatchingOffer(orderId);
-      if (order.acceptedDriver && order.acceptedDriver.driverId === STATE.user.tgId) {
+      if (order.acceptedDriver && order.acceptedDriver.driverId === STATE.uid) {
         // Our offer was accepted!
         if (STATE.driverActiveOrderId) return; // already on a ride
         STATE.driverActiveOrderId = orderId;
         saveState();
-        dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: true });
+        dbSet('driver_shifts', STATE.uid + '_shift', { hasActiveOrder: true });
         stopListeningOrders();
         startListeningActiveOrder();
         _show('d-online-box', false);
         _show('d-active-order', true);
         renderActiveDriverOrder(order);
         showToast('Пассажир выбрал вас! Едьте к нему 🎉', 'ok');
-        tg.HapticFeedback.notificationOccurred('success');
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
       } else {
         showToast('Пассажир выбрал другого водителя');
-        tg.HapticFeedback.notificationOccurred('warning');
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('warning');
+      }
+      return;
+    }
+    // status === 'searching': check if our offer is still in the list
+    if (order.status === 'searching') {
+      const myOffer = (order.offers || []).find(o => o.driverId === STATE.uid);
+      if (!myOffer && _pendingOfferData[orderId]) {
+        // Our offer was declined or expired by the passenger
+        stopWatchingOffer(orderId);
+        // Force card rebuild with latest order data
+        renderDriverOrders(_lastKnownOrders, _lastKnownMode);
+        showToast('Пассажир отклонил ваше предложение', 'warn');
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('warning');
       }
     }
   });
@@ -436,13 +442,13 @@ async function drvAcceptOrder(orderId, price) {
     showToast('Заказ уже занят', 'warn'); return;
   }
   // Check if driver already submitted an offer for this order
-  const existing = (order.offers || []).find(o => o.driverId === STATE.user.tgId);
+  const existing = (order.offers || []).find(o => o.driverId === STATE.uid);
   if (existing) {
     showToast('Вы уже отправили предложение', 'warn'); return;
   }
   const offer = {
     id: 'OFF-' + Date.now(),
-    driverId: STATE.user.tgId,
+    driverId: STATE.uid,
     name: STATE.user.name,
     car: STATE.user.car ? `${STATE.user.car.color} ${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
     rating: STATE.user.rating,
@@ -548,7 +554,7 @@ async function finishRide() {
     }
   } catch (e) { console.warn('[finishRide] passenger trips / earnings:', e); }
 
-  await dbSet('users', STATE.user.tgId, {
+  await dbSet('users', STATE.uid, {
     trips: STATE.user.trips,
     driverTrips: STATE.user.driverTrips,
     bonusTrips: STATE.user.bonusTrips,
@@ -559,7 +565,7 @@ async function finishRide() {
     lastStatsDate: new Date().toDateString()
   });
 
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: false });
+  await dbSet('driver_shifts', STATE.uid + '_shift', { hasActiveOrder: false });
 
   STATE.driverActiveOrderId = null;
   saveState();
@@ -585,7 +591,7 @@ async function driverCancelRide() {
         cancelledAt: new Date().toISOString(),
         cancelReason: ''
       });
-      await dbSet('driver_shifts', STATE.user.tgId + '_shift', { hasActiveOrder: false });
+      await dbSet('driver_shifts', STATE.uid + '_shift', { hasActiveOrder: false });
       STATE.driverActiveOrderId = null;
       saveState();
       if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
@@ -617,7 +623,7 @@ async function goOnline() {
   }
   if (isNextFree) {
     STATE.user.nextShiftFree = false;
-    await dbSet('users', STATE.user.tgId, { nextShiftFree: false });
+    await dbSet('users', STATE.uid, { nextShiftFree: false });
   }
 
   const hour = new Date().getHours();
@@ -630,8 +636,8 @@ async function goOnline() {
   STATE.shiftTrips = 0;
   saveState();
 
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', {
-    driverId: STATE.user.tgId,
+  await dbSet('driver_shifts', STATE.uid + '_shift', {
+    driverId: STATE.uid,
     driverName: STATE.user.name,
     city: STATE.user.city,
     mode: STATE.driverMode || 'city',
@@ -665,18 +671,37 @@ async function autoEndShift() {
 async function endShift() {
   clearTimeout(_shiftTimer);
   _shiftTimer = null;
-  // Clean up any pending offer watches
+  // Clean up all pending offer watches
   Object.keys(_pendingOfferListeners).forEach(stopWatchingOffer);
+  _stopDriverOfferCountdown();
+
+  // If driver has an active order — cancel it and notify passenger
+  if (STATE.driverActiveOrderId) {
+    try {
+      await dbSet('orders', STATE.driverActiveOrderId, {
+        status: 'cancelled',
+        cancelledBy: 'driver',
+        cancelledAt: new Date().toISOString(),
+        cancelReason: 'Водитель завершил смену'
+      });
+    } catch (e) { console.warn('[endShift] cancel order:', e); }
+    await dbSet('driver_shifts', STATE.uid + '_shift', { hasActiveOrder: false });
+    if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
+    STATE.driverActiveOrderId = null;
+    _show('d-active-order', false);
+    showToast('Активный заказ отменён — пассажир уведомлён', 'warn');
+  }
+
   STATE.shiftActive = false;
   const prevShifts = STATE.user.totalShifts || 0;
   STATE.user.totalShifts = prevShifts + 1;
   STATE.user.avgShiftTrips = ((STATE.user.avgShiftTrips || 0) * prevShifts + (STATE.shiftTrips || 0)) / STATE.user.totalShifts;
   saveState();
-  await dbSet('driver_shifts', STATE.user.tgId + '_shift', {
+  await dbSet('driver_shifts', STATE.uid + '_shift', {
     active: false,
     endedAt: new Date().toISOString()
   });
-  await dbSet('users', STATE.user.tgId, {
+  await dbSet('users', STATE.uid, {
     totalShifts: STATE.user.totalShifts,
     avgShiftTrips: STATE.user.avgShiftTrips
   });
@@ -866,7 +891,7 @@ async function renderDHistory() {
     // Query all done orders and filter client-side (Firestore needs composite index for two-field query)
     const orders = await dbQuery('orders', 'status', '==', 'done');
     const mine = orders
-      .filter(o => o.acceptedDriver && o.acceptedDriver.driverId === STATE.user.tgId)
+      .filter(o => o.acceptedDriver && o.acceptedDriver.driverId === STATE.uid)
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     if (!mine.length) {
       list.innerHTML = '<div class="empty-st"><div class="empty-ico">📋</div><div class="empty-txt">Поездок пока нет</div></div>';

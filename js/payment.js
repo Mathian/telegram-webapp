@@ -46,8 +46,8 @@ async function _simulateTonPayment() {
   STATE.paidToday = new Date().toDateString();
   saveState();
   // Record payment in Firebase
-  if (STATE.user) {
-    await dbSet('users', STATE.user.tgId, { lastPaidAt: new Date().toISOString() });
+  if (STATE.uid) {
+    await dbSet('users', STATE.uid, { lastPaidAt: new Date().toISOString() });
   }
   closeModal('mo-ton');
   showToast('Оплата принята! (тест) ✅', 'ok');

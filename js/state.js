@@ -3,6 +3,9 @@
    ============================================================ */
 
 let STATE = {
+  // Identity
+  uid: null,          // HMAC-SHA256 hash of phone — permanent account ID
+
   // Registration
   registered: false,
   role: 'passenger',

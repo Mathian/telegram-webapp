@@ -37,7 +37,7 @@ async function submitRating() {
     stars: STATE.currentRating,
     comment,
     complaint,
-    by: STATE.user.tgId,
+    by: STATE.uid,
     createdAt: new Date().toISOString()
   });
 

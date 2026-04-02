@@ -25,8 +25,8 @@ function setupPassengerListeners() {
   }
 
   // Listen for driver approval / block changes even while in passenger mode
-  if (STATE.user && STATE.user.tgId) {
-    onDocSnapshot('users', STATE.user.tgId, freshUser => {
+  if (STATE.uid) {
+    onDocSnapshot('users', STATE.uid, freshUser => {
       if (!freshUser) return;
       const wasApproved = STATE.user.approved;
       STATE.user = { ...STATE.user, ...freshUser };
@@ -77,7 +77,7 @@ async function checkActiveOrderStatus() {
 function handleOrderUpdate(order) {
   if (!order) return;
   // Safety: ignore updates for orders that don't belong to this passenger
-  if (order.passengerId && STATE.user && order.passengerId !== STATE.user.tgId) {
+  if (order.passengerId && STATE.uid && order.passengerId !== STATE.uid) {
     console.warn('[handleOrderUpdate] Ignoring order from another passenger:', order.id);
     return;
   }
@@ -324,7 +324,7 @@ async function createOrder() {
   const orderId = 'ORD-' + Date.now();
   const order = {
     id: orderId,
-    passengerId: STATE.user.tgId,
+    passengerId: STATE.uid,
     passengerName: STATE.user.name,
     passengerPhone: STATE.user.phone,
     passengerRating: STATE.user.rating,
@@ -464,7 +464,7 @@ async function renderPHistory() {
   if (!list) return;
   list.innerHTML = '<div class="empty-st"><div class="empty-ico">⏳</div><div class="empty-txt">Загрузка...</div></div>';
   try {
-    const orders = await dbQuery('orders', 'passengerId', '==', STATE.user.tgId);
+    const orders = await dbQuery('orders', 'passengerId', '==', STATE.uid);
     const done = orders
       .filter(o => ['done', 'cancelled'].includes(o.status))
       .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));

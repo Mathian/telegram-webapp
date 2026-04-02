@@ -7,8 +7,8 @@ let _unsubSupportChat = null;
 function openSupportChat() {
   STATE.supportChatFrom = STATE.role;
   // Mark messages as read
-  if (STATE.user) {
-    localStorage.setItem('support_last_read_' + STATE.user.tgId, new Date().toISOString());
+  if (STATE.uid) {
+    localStorage.setItem('support_last_read_' + STATE.uid, new Date().toISOString());
   }
   clearSupportBadge();
   showScreen('s-support');
@@ -21,8 +21,8 @@ function closeSupportChat() {
 }
 
 async function loadSupportMsgs() {
-  if (!STATE.user) return;
-  const chatId = 'support_' + STATE.user.tgId;
+  if (!STATE.uid) return;
+  const chatId = 'support_' + STATE.uid;
   const msgsEl = document.getElementById('support-msgs');
   if (!msgsEl) return;
 
@@ -41,7 +41,7 @@ async function loadSupportMsgs() {
     msgsEl.scrollTop = msgsEl.scrollHeight;
 
     // Check for unread admin messages
-    const lastReadKey = 'support_last_read_' + STATE.user.tgId;
+    const lastReadKey = 'support_last_read_' + STATE.uid;
     const lastRead = localStorage.getItem(lastReadKey) || '1970-01-01';
     const hasUnread = sorted.some(m => m.from === 'admin' && m.createdAt > lastRead);
     if (hasUnread) {
@@ -55,17 +55,17 @@ async function loadSupportMsgs() {
 }
 
 async function sendSupportMsg() {
-  if (!STATE.user) return;
+  if (!STATE.uid || !STATE.user) return;
   const input = document.getElementById('support-input');
   const text = input.value.trim();
   if (!text) return;
   input.value = '';
-  const chatId = 'support_' + STATE.user.tgId;
+  const chatId = 'support_' + STATE.uid;
   await dbSet('chats', 'MSG-' + Date.now(), {
     chatId,
     from: 'user',
     text,
-    userId: STATE.user.tgId,
+    userId: STATE.uid,
     userName: STATE.user.name,
     createdAt: new Date().toISOString()
   });
@@ -98,8 +98,8 @@ function clearSupportBadge() {
   });
   const arr = document.getElementById('mi-support-arr');
   if (arr) arr.textContent = '›';
-  if (STATE.user) {
-    localStorage.setItem('support_last_read_' + STATE.user.tgId, new Date().toISOString());
+  if (STATE.uid) {
+    localStorage.setItem('support_last_read_' + STATE.uid, new Date().toISOString());
   }
 }
 
@@ -122,9 +122,9 @@ function playNotificationSound() {
 
 // ---- Check unread on app init ----
 function checkSupportUnread() {
-  if (!STATE.user) return;
-  const chatId = 'support_' + STATE.user.tgId;
-  const lastReadKey = 'support_last_read_' + STATE.user.tgId;
+  if (!STATE.uid) return;
+  const chatId = 'support_' + STATE.uid;
+  const lastReadKey = 'support_last_read_' + STATE.uid;
   const lastRead = localStorage.getItem(lastReadKey) || '1970-01-01';
   dbQuery('chats', 'chatId', '==', chatId).then(msgs => {
     const hasUnread = msgs.some(m => m.from === 'admin' && m.createdAt > lastRead);
