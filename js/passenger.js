@@ -519,15 +519,16 @@ function openAddrModal(target) {
       cityInput.oninput = function() {
         const q = this.value.trim().toLowerCase();
         cityList.innerHTML = '';
-        if (q.length < 2) { cityList.classList.remove('open'); return; }
+        if (q.length < 1) { cityList.classList.remove('open'); return; }
         const matches = [];
-        (window.COUNTRIES || []).forEach(c => {
+        Object.entries(window.COUNTRIES || {}).forEach(([name, c]) => {
           (c.cities || []).forEach(city => {
-            if (city.toLowerCase().includes(q)) matches.push({ city, country: c.name });
+            if (city.toLowerCase().includes(q) || name.toLowerCase().includes(q))
+              matches.push({ city, country: name });
           });
         });
         if (!matches.length) { cityList.classList.remove('open'); return; }
-        matches.slice(0, 8).forEach(m => {
+        matches.slice(0, 10).forEach(m => {
           const li = document.createElement('div');
           li.className = 'ac-item';
           li.textContent = m.city + ', ' + m.country;

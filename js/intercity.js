@@ -185,7 +185,7 @@ async function renderIcMyOrders() {
         <div class="ord-hdr">
           <div style="font-size:11px;color:var(--text3)">${o.date} ${o.time}</div>
           <span class="tag ${o.status === 'done' ? 'tag-g' : o.status === 'cancelled' ? '' : 'tag-y'}">
-            ${o.status === 'searching' ? '🔍 Поиск' : o.status === 'done' ? '✓ Принято' : '✗ Отменено'}
+            ${o.status === 'searching' ? '🔍 Поиск' : o.status === 'done' ? '✓ Поездка состоялась' : '✗ Закрыто'}
           </span>
         </div>
         <div class="ord-route">
@@ -198,8 +198,7 @@ async function renderIcMyOrders() {
             <div class="offer-price">${fmtPrice(o.price)}₸</div>
           </div>
           ${isSearching ? `<div style="display:flex;gap:7px">
-            ${contacts.length > 0 ? `<button class="btn btn-green btn-sm" onclick="icFoundDriver('${o.id}')">Нашёл ✓</button>` : ''}
-            <button class="btn btn-out btn-sm" onclick="icCancel('${o.id}')">Отменить</button>
+            <button class="btn btn-y btn-sm" onclick="icClose('${o.id}')">Закрыть заявку ✓</button>
           </div>` : ''}
         </div>
         ${contacts.length > 0 ? `<div style="padding:0 14px 12px;font-size:12px;color:var(--green)">📞 Водителей позвонило: ${contacts.length}</div>` : ''}
@@ -210,67 +209,109 @@ async function renderIcMyOrders() {
   }
 }
 
-// ---- Passenger: found a driver ----
-async function icFoundDriver(orderId) {
+// ---- Passenger: close order — show driver selection if anyone called ----
+async function icClose(orderId) {
+  showLoading(true);
   const order = await dbGet('orders', orderId);
+  showLoading(false);
   if (!order) return;
+
   const contacts = order.contacts || [];
-  if (!contacts.length) { showToast('Никто ещё не звонил', 'warn'); return; }
 
-  // Build selection modal content
-  let html = '<div class="mhandle"></div><div class="mtitle">Выберите водителя</div>';
-  html += '<div style="font-size:13px;color:var(--text2);margin-bottom:14px">Кто из позвонивших водителей договорился с вами?</div>';
-  html += contacts.map((c, i) => `
-    <button class="btn btn-out" style="margin-bottom:8px;text-align:left;padding:12px 14px" onclick="icSelectDriver('${orderId}','${c.driverId}')">
-      <strong>${escHtml(c.name)}</strong><br>
-      <span style="font-size:12px;color:var(--text2)">${escHtml(c.phone)}</span>
+  if (!contacts.length) {
+    // Nobody called — just ask to close with no driver
+    tg.showConfirm('Закрыть заявку? Никто ещё не звонил.', async ok => {
+      if (!ok) return;
+      await dbSet('orders', orderId, {
+        status: 'cancelled',
+        cancelledBy: 'passenger',
+        cancelledAt: new Date().toISOString(),
+        cancelReason: 'Закрыто пассажиром'
+      });
+      renderIcMyOrders();
+      showToast('Заявка закрыта');
+    });
+    return;
+  }
+
+  // Drivers called — show selection modal
+  _showIcDriverSelectModal(orderId, contacts);
+}
+
+function _showIcDriverSelectModal(orderId, contacts) {
+  let html = '<div class="mhandle"></div>';
+  html += '<div class="mtitle">С кем договорились?</div>';
+  html += '<div style="font-size:13px;color:var(--text2);margin-bottom:16px;padding:0 20px">Выберите водителя, с которым договорились о поездке:</div>';
+  html += '<div style="padding:0 20px;overflow-y:auto;max-height:55vh">';
+  html += contacts.map(c => `
+    <button class="btn btn-out" style="margin-bottom:8px;text-align:left;width:100%;padding:12px 14px"
+      onclick="icSelectDriver('${escHtml(orderId)}','${escHtml(c.driverId)}')">
+      <div style="font-weight:700;font-size:14px">${escHtml(c.name)}</div>
+      <div style="font-size:13px;color:var(--y);margin-top:2px">📞 ${escHtml(c.phone)}</div>
+      <div style="font-size:11px;color:var(--text3);margin-top:1px">${fmtRelTime(c.contactedAt)}</div>
     </button>`).join('');
-  html += `<button class="btn btn-ghost" style="margin-top:4px" onclick="closeModal('mo-ic-select')">Отмена</button>`;
+  html += `
+    <button class="btn" style="margin-bottom:8px;width:100%;padding:12px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)"
+      onclick="icNoDriver('${escHtml(orderId)}')">
+      😔 Не удалось договориться
+    </button>
+  </div>`;
 
-  // Reuse or create ic-select modal
   let mo = document.getElementById('mo-ic-select');
   if (!mo) {
     mo = document.createElement('div');
     mo.className = 'mo';
     mo.id = 'mo-ic-select';
-    mo.innerHTML = `<div class="ms" style="padding:0 20px 40px">${html}</div>`;
     document.body.appendChild(mo);
     mo.addEventListener('click', e => { if (e.target === mo) mo.classList.remove('open'); });
-  } else {
-    mo.querySelector('.ms').innerHTML = html;
   }
+  mo.innerHTML = `<div class="ms" style="padding:0 0 40px">${html}</div>`;
   mo.classList.add('open');
 }
 
 async function icSelectDriver(orderId, driverId) {
   closeModal('mo-ic-select');
+  showLoading(true);
   const order = await dbGet('orders', orderId);
-  if (!order) return;
+  if (!order) { showLoading(false); return; }
   const drv = (order.contacts || []).find(c => c.driverId === driverId);
-  if (!drv) return;
+  if (!drv) { showLoading(false); return; }
+
   await dbSet('orders', orderId, {
     status: 'done',
-    acceptedDriver: { driverId: drv.driverId, name: drv.name, phone: drv.phone, price: order.price, eta: 0, car: '' },
+    acceptedDriver: {
+      driverId: drv.driverId,
+      name: drv.name,
+      phone: drv.phone,
+      price: order.price,
+      eta: 0,
+      car: drv.car || ''
+    },
     finishedAt: new Date().toISOString()
   });
-  // Increment passenger trips
+
+  // Increment counters for both sides
   await dbIncrement('users', STATE.uid, 'trips');
   await dbIncrement('users', STATE.uid, 'passengerTrips');
-  // Increment driver trips
   await dbIncrement('users', driverId, 'trips');
   await dbIncrement('users', driverId, 'driverTrips');
-  showToast('Отлично! Данные водителя сохранены ✅', 'ok');
+
+  showLoading(false);
+  showToast('Поездка записана в историю ✅', 'ok');
+  tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
   renderIcMyOrders();
 }
 
-// ---- Cancel IC order ----
-async function icCancel(orderId) {
-  tg.showConfirm('Отменить заявку?', async ok => {
-    if (!ok) return;
-    await dbSet('orders', orderId, { status: 'cancelled', cancelledAt: new Date().toISOString() });
-    renderIcMyOrders();
-    showToast('Заявка отменена');
+async function icNoDriver(orderId) {
+  closeModal('mo-ic-select');
+  await dbSet('orders', orderId, {
+    status: 'cancelled',
+    cancelledBy: 'passenger',
+    cancelledAt: new Date().toISOString(),
+    cancelReason: 'Не удалось договориться'
   });
+  renderIcMyOrders();
+  showToast('Заявка закрыта');
 }
 
 // ---- Driver contacts passenger ----
@@ -295,6 +336,7 @@ async function icDriverContact(orderId) {
       driverId: STATE.uid,
       name: STATE.user.name,
       phone: STATE.user.phone,
+      car: STATE.user.car ? `${STATE.user.car.color} ${STATE.user.car.brand} · ${STATE.user.car.num}` : '',
       contactedAt: new Date().toISOString()
     });
     await dbSet('orders', orderId, { contacts });

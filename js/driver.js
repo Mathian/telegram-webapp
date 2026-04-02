@@ -713,20 +713,36 @@ async function endShift() {
 }
 
 // ---- Driver intercity city picker ----
+function _buildDrvIcCityHtml(filter) {
+  const q = (filter || '').trim().toLowerCase();
+  let html = '';
+  Object.entries(COUNTRIES).forEach(([name, c]) => {
+    (c.cities || []).forEach(city => {
+      if (q && !city.toLowerCase().includes(q) && !name.toLowerCase().includes(q)) return;
+      const cityEsc = city.replace(/'/g, "\\'");
+      const nameEsc = name.replace(/'/g, "\\'");
+      html += `<button class="btn btn-out" style="margin-bottom:6px;text-align:left;width:100%;padding:10px 12px"
+        onclick="selDriverIcCity('${cityEsc}','${nameEsc}')">
+        <strong>${city}</strong>
+        <span style="color:var(--text3);font-size:11px;margin-left:6px">${c.flag} ${name}</span>
+      </button>`;
+    });
+  });
+  return html || '<div style="padding:20px;text-align:center;color:var(--text3)">Город не найден</div>';
+}
+
 function openDriverIcCityPicker() {
   const list = document.getElementById('drv-ic-city-list');
-  if (list) {
-    let html = '';
-    (window.COUNTRIES || []).forEach(c => {
-      (c.cities || []).forEach(city => {
-        const cityEsc = city.replace(/'/g, "\\'");
-        const countryEsc = c.name.replace(/'/g, "\\'");
-        html += `<button class="btn btn-out" style="margin-bottom:6px;text-align:left;width:100%" onclick="selDriverIcCity('${cityEsc}','${countryEsc}')"><strong>${city}</strong> <span style="color:var(--text3);font-size:11px">${c.name}</span></button>`;
-      });
-    });
-    list.innerHTML = html || '<div style="padding:20px;text-align:center;color:var(--text3)">Нет данных</div>';
-  }
+  const search = document.getElementById('drv-ic-city-search');
+  if (search) search.value = '';
+  if (list) list.innerHTML = _buildDrvIcCityHtml('');
   openModal('mo-drv-ic-city');
+  setTimeout(() => { if (search) search.focus(); }, 350);
+}
+
+function filterDrvIcCities(val) {
+  const list = document.getElementById('drv-ic-city-list');
+  if (list) list.innerHTML = _buildDrvIcCityHtml(val);
 }
 
 function selDriverIcCity(city, country) {
@@ -735,8 +751,13 @@ function selDriverIcCity(city, country) {
   saveState();
   _setText('d-ic-city-label', city);
   closeModal('mo-drv-ic-city');
-  stopListeningOrders();
-  startListeningOrders();
+  // Also update the offline city label if visible
+  const offlineLabel = document.getElementById('d-ic-city-label-offline');
+  if (offlineLabel) offlineLabel.textContent = city;
+  if (STATE.shiftActive) {
+    stopListeningOrders();
+    startListeningOrders();
+  }
   showToast('Город: ' + city + ' ✅', 'ok');
 }
 
@@ -747,6 +768,12 @@ function selDrvMode(mode) {
   saveState();
   document.getElementById('d-mode-city').classList.toggle('on', mode === 'city');
   document.getElementById('d-mode-ic').classList.toggle('on', mode === 'intercity');
+  // Show/hide offline city row
+  const offlineRow = document.getElementById('d-ic-city-offline-row');
+  if (offlineRow) offlineRow.style.display = mode === 'intercity' ? '' : 'none';
+  // Sync offline label with current city
+  const offLabel = document.getElementById('d-ic-city-label-offline');
+  if (offLabel) offLabel.textContent = STATE.driverIcCity || STATE.user?.city || '—';
   const icRow = document.getElementById('d-ic-city-row');
   if (icRow) icRow.style.display = mode === 'intercity' ? 'block' : 'none';
   if (mode === 'intercity' && !STATE.driverIcCity && STATE.user) {
@@ -782,7 +809,16 @@ function updateDriverUI() {
   _setText('dp-trips-today', u.driverTripsToday || 0);
   _setText('dp-earnings-today', fmtPrice(u.driverEarningsToday || 0) + '₸');
   _setText('dp-earnings-total', fmtPrice(u.driverEarnings || 0) + '₸');
-  _setText('d-ic-city-label', STATE.driverIcCity || u.city || '—');
+  const icCity = STATE.driverIcCity || u.city || '—';
+  _setText('d-ic-city-label', icCity);
+  _setText('d-ic-city-label-offline', icCity);
+
+  // Show intercity city row when in intercity mode
+  const mode = STATE.driverMode || u.driverMode || 'city';
+  const icOnlineRow = document.getElementById('d-ic-city-row');
+  if (icOnlineRow) icOnlineRow.style.display = (STATE.shiftActive && mode === 'intercity') ? '' : 'none';
+  const icOfflineRow = document.getElementById('d-ic-city-offline-row');
+  if (icOfflineRow) icOfflineRow.style.display = (!STATE.shiftActive && mode === 'intercity') ? '' : 'none';
 
   const bonusEnabled = STATE.bonusSystemEnabled;
   _show('d-bonus-row', bonusEnabled);
