@@ -151,7 +151,7 @@ async function finishReg() {
 
     showLoading(false);
     showToast('Регистрация завершена! ✅', 'ok');
-    setTimeout(() => initMain(), 600);
+    setTimeout(() => showConsentScreen(), 600);
   } catch (e) {
     console.error('finishReg error:', e);
     showLoading(false);

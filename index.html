@@ -39,6 +39,56 @@
   </div>
 </div>
 
+<!-- ===================== CONSENT ===================== -->
+<div class="screen" id="s-consent">
+  <div class="consent-wrap">
+    <div class="consent-hdr">
+      <div class="consent-hdr-icon">📋</div>
+      <div class="consent-hdr-title">Условия использования</div>
+      <div class="consent-hdr-sub">Для использования сервиса ознакомьтесь<br>и примите все документы ниже</div>
+    </div>
+    <div class="consent-items">
+      <div class="consent-row" id="cr-passenger">
+        <div class="consent-cb" id="cb-passenger" onclick="toggleConsentCb('passenger')"></div>
+        <div class="consent-doc-info">
+          <div class="consent-doc-name">📄 Соглашение для пассажиров</div>
+          <div class="consent-doc-sub">Правила пользования сервисом</div>
+        </div>
+        <button class="consent-read-btn" onclick="openLegalDoc('passenger','s-consent')">Читать →</button>
+      </div>
+      <div class="consent-row" id="cr-driver">
+        <div class="consent-cb" id="cb-driver" onclick="toggleConsentCb('driver')"></div>
+        <div class="consent-doc-info">
+          <div class="consent-doc-name">🚗 Соглашение для водителей</div>
+          <div class="consent-doc-sub">Условия работы на платформе</div>
+        </div>
+        <button class="consent-read-btn" onclick="openLegalDoc('driver','s-consent')">Читать →</button>
+      </div>
+      <div class="consent-row" id="cr-privacy">
+        <div class="consent-cb" id="cb-privacy" onclick="toggleConsentCb('privacy')"></div>
+        <div class="consent-doc-info">
+          <div class="consent-doc-name">🔒 Политика конфиденциальности</div>
+          <div class="consent-doc-sub">Как мы используем ваши данные</div>
+        </div>
+        <button class="consent-read-btn" onclick="openLegalDoc('privacy','s-consent')">Читать →</button>
+      </div>
+    </div>
+    <div class="consent-footer">
+      <div class="consent-agree-note">Нажимая «Принять и начать», вы подтверждаете, что ознакомились со всеми документами и согласны с их условиями</div>
+      <button class="btn btn-y" id="btn-submit-consent" onclick="submitConsent()">Принять и начать 🚀</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== LEGAL DOC VIEWER ===================== -->
+<div class="screen" id="s-legal">
+  <div class="s-legal-hdr">
+    <button class="s-legal-back" onclick="closeLegalDoc()">←</button>
+    <div class="s-legal-title" id="legal-doc-title">Документ</div>
+  </div>
+  <div class="scroll" id="legal-doc-body"></div>
+</div>
+
 <!-- ===================== ONBOARDING ===================== -->
 <div class="screen" id="s-onboard">
   <div class="onboard-wrap">
@@ -258,6 +308,12 @@
         <button class="mi" id="mi-support" onclick="openSupportChat()"><span class="mi-ico">💬</span><span class="mi-txt">Поддержка</span><span class="mi-arr" id="mi-support-arr">›</span></button>
         <button class="mi" onclick="switchRole()"><span class="mi-ico">🚗</span><span class="mi-txt">Режим водителя</span><span class="mi-arr">›</span></button>
       </div>
+      <div class="mlist" style="margin-top:8px">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:0 16px 6px">Документы</div>
+        <button class="mi" onclick="openLegalDoc('passenger','s-passenger')"><span class="mi-ico">📄</span><span class="mi-txt">Соглашение для пассажиров</span><span class="mi-arr">›</span></button>
+        <button class="mi" onclick="openLegalDoc('driver','s-passenger')"><span class="mi-ico">🚗</span><span class="mi-txt">Соглашение для водителей</span><span class="mi-arr">›</span></button>
+        <button class="mi" onclick="openLegalDoc('privacy','s-passenger')"><span class="mi-ico">🔒</span><span class="mi-txt">Политика конфиденциальности</span><span class="mi-arr">›</span></button>
+      </div>
     </div>
   </div>
   <div class="bnav">
@@ -399,6 +455,12 @@
         <button class="mi" onclick="openModal('mo-settings')"><span class="mi-ico">⚙️</span><span class="mi-txt">Настройки / Данные авто</span><span class="mi-arr">›</span></button>
         <button class="mi" id="mi-support" onclick="openSupportChat()"><span class="mi-ico">💬</span><span class="mi-txt">Поддержка</span><span class="mi-arr" id="mi-support-arr">›</span></button>
         <button class="mi" onclick="switchRole()"><span class="mi-ico">🧳</span><span class="mi-txt">Режим пассажира</span><span class="mi-arr">›</span></button>
+      </div>
+      <div class="mlist" style="margin-top:8px">
+        <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:0 16px 6px">Документы</div>
+        <button class="mi" onclick="openLegalDoc('passenger','s-driver')"><span class="mi-ico">📄</span><span class="mi-txt">Соглашение для пассажиров</span><span class="mi-arr">›</span></button>
+        <button class="mi" onclick="openLegalDoc('driver','s-driver')"><span class="mi-ico">🚗</span><span class="mi-txt">Соглашение для водителей</span><span class="mi-arr">›</span></button>
+        <button class="mi" onclick="openLegalDoc('privacy','s-driver')"><span class="mi-ico">🔒</span><span class="mi-txt">Политика конфиденциальности</span><span class="mi-arr">›</span></button>
       </div>
     </div>
   </div>
@@ -742,6 +804,7 @@
 
 <script src="js/payment.js"></script>
 <script src="js/rating.js"></script>
+<script src="js/legal.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

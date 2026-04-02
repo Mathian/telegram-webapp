@@ -70,6 +70,7 @@ window.addEventListener('DOMContentLoaded', () => {
     }
 
     if (STATE.registered && STATE.user) {
+      if (!STATE.user.consentGiven) { showConsentScreen(); return; }
       initMain();
     } else {
       // Try auto-login: check if uid already has a profile in Firebase
@@ -80,6 +81,7 @@ window.addEventListener('DOMContentLoaded', () => {
           STATE.role = existing.role || 'passenger';
           STATE.registered = true;
           saveState();
+          if (!existing.consentGiven) { showConsentScreen(); return; }
           initMain();
           return;
         }
