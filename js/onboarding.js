@@ -106,6 +106,8 @@ async function finishReg() {
     const tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user;
     const tgId = (tgUser && tgUser.id) ? String(tgUser.id) : '';
 
+    const currency = GEO.getCurrency(country); // {code, symbol} based on country
+
     const user = {
       uid: STATE.uid,
       tgId,
@@ -114,6 +116,7 @@ async function finishReg() {
       country,
       countryName,
       city,
+      currency,
       username: (tgUser && tgUser.username) || '',
       role: STATE.obRole,
       rating: 5.0,
@@ -285,7 +288,8 @@ async function saveSettings() {
   if (!name) { showToast('Введите имя', 'err'); return; }
   if (!city) { showToast('Выберите город', 'err'); return; }
 
-  const updates = { name, country, countryName, city };
+  const currency = country ? GEO.getCurrency(country) : (STATE.user.currency || { code: 'KZT', symbol: '₸' });
+  const updates = { name, country, countryName, city, currency };
 
   if (STATE.user.role === 'driver') {
     const brand = document.getElementById('edit-car-brand').value.trim();

@@ -135,7 +135,7 @@ function _buildIcCardHtml(o) {
       ${o.comment ? `<span class="tag">💬 ${escHtml(o.comment.substring(0,20))}${o.comment.length>20?'...':''}</span>` : ''}
     </div>
     <div class="ord-bot">
-      <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtPrice(o.price)}₸</div></div>
+      <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtMoney(o.price, o.currency?.symbol)}</div></div>
       <button class="btn btn-blue btn-sm" onclick="icDriverContact('${o.id}')">📞 Связаться</button>
     </div>`;
 }
@@ -150,7 +150,7 @@ function _buildCityCardHtml(o) {
     botHtml = `
       <div class="ord-bot" style="flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-size:10px;color:var(--text3)">Ваше предложение</div><div class="offer-price">${fmtPrice(pd.price)}₸</div></div>
+          <div><div style="font-size:10px;color:var(--text3)">Ваше предложение</div><div class="offer-price">${fmtMoney(pd.price, o.currency?.symbol)}</div></div>
           <span class="tag tag-g">⏳ Ожидание пассажира</span>
         </div>
         <div class="offer-progress-wrap"><div class="offer-progress-bar" id="dopb-${o.id}" style="width:${pct.toFixed(1)}%"></div></div>
@@ -158,7 +158,7 @@ function _buildCityCardHtml(o) {
   } else {
     botHtml = `
       <div class="ord-bot">
-        <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtPrice(o.price)}₸</div></div>
+        <div><div style="font-size:10px;color:var(--text3)">Цена пассажира</div><div class="offer-price">${fmtMoney(o.price, o.currency?.symbol)}</div></div>
         <div style="display:flex;gap:7px">
           <button class="btn btn-ghost btn-sm" onclick="openDrvOffer('${o.id}',${o.price})">Предложить цену</button>
           <button class="btn btn-y btn-sm" onclick="drvAcceptOrder('${o.id}',${o.price})">Принять</button>
@@ -292,11 +292,11 @@ function _stopDriverOfferCountdown() {
 // ---- Render active driver order ----
 function renderActiveDriverOrder(order) {
   _setText('d-act-route', `${order.from} → ${order.to}`);
-  _setText('d-act-meta', `${fmtPrice(order.acceptedPrice || order.price)}₸ · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}${order.comment ? ' · ' + order.comment : ''}`);
+  _setText('d-act-meta', `${fmtMoney(order.acceptedPrice || order.price, order.currency?.symbol)} · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}${order.comment ? ' · ' + order.comment : ''}`);
   _setText('d-act-pname', order.passengerName || '—');
   _setText('d-act-pphone', order.passengerPhone || '—');
   _setText('d-act-prating', fmtRating(order.passengerRating));
-  _setText('d-act-price', fmtPrice(order.acceptedPrice || order.price) + '₸');
+  _setText('d-act-price', fmtMoney(order.acceptedPrice || order.price, order.currency?.symbol));
 
   const arrBtn = document.getElementById('btn-arrived');
   const startBtn = document.getElementById('btn-start-ride');
@@ -322,7 +322,7 @@ function renderActiveDriverOrder(order) {
 function openDrvOffer(orderId, passengerPrice) {
   STATE.currentOfferOrderId = orderId;
   STATE.currentOfferPassengerPrice = passengerPrice;
-  _setText('doi-pprice', fmtPrice(passengerPrice) + '₸');
+  _setText('doi-pprice', fmtMoney(passengerPrice));
   _setVal('doi-price', passengerPrice + 50);
   // Reset to 5 min radio
   const r5 = document.querySelector('input[name="doi-eta"][value="5"]');
@@ -342,7 +342,7 @@ async function submitOffer() {
   const price = parseInt(document.getElementById('doi-price').value);
   const minPrice = STATE.currentOfferPassengerPrice || 0;
   if (!price || price < minPrice) {
-    showToast(`Цена не может быть ниже ${fmtPrice(minPrice)}₸`, 'err'); return;
+    showToast(`Цена не может быть ниже ${fmtMoney(minPrice)}`, 'err'); return;
   }
   const etaEl = document.querySelector('input[name="doi-eta"]:checked');
   const eta = etaEl ? parseInt(etaEl.value) : 5;
@@ -712,37 +712,40 @@ async function endShift() {
   showToast('Смена завершена ✅', 'ok');
 }
 
-// ---- Driver intercity city picker ----
-function _buildDrvIcCityHtml(filter) {
-  const q = (filter || '').trim().toLowerCase();
-  let html = '';
-  Object.entries(COUNTRIES).forEach(([name, c]) => {
-    (c.cities || []).forEach(city => {
-      if (q && !city.toLowerCase().includes(q) && !name.toLowerCase().includes(q)) return;
-      const cityEsc = city.replace(/'/g, "\\'");
-      const nameEsc = name.replace(/'/g, "\\'");
-      html += `<button class="btn btn-out" style="margin-bottom:6px;text-align:left;width:100%;padding:10px 12px"
-        onclick="selDriverIcCity('${cityEsc}','${nameEsc}')">
-        <strong>${city}</strong>
-        <span style="color:var(--text3);font-size:11px;margin-left:6px">${c.flag} ${name}</span>
-      </button>`;
-    });
-  });
-  return html || '<div style="padding:20px;text-align:center;color:var(--text3)">Город не найден</div>';
-}
-
+// ---- Driver intercity city picker (via GEO API) ----
 function openDriverIcCityPicker() {
   const list = document.getElementById('drv-ic-city-list');
   const search = document.getElementById('drv-ic-city-search');
   if (search) search.value = '';
-  if (list) list.innerHTML = _buildDrvIcCityHtml('');
+  if (list) list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Введите название города для поиска</div>';
   openModal('mo-drv-ic-city');
   setTimeout(() => { if (search) search.focus(); }, 350);
 }
 
 function filterDrvIcCities(val) {
   const list = document.getElementById('drv-ic-city-list');
-  if (list) list.innerHTML = _buildDrvIcCityHtml(val);
+  if (!list) return;
+  const q = (val || '').trim();
+  if (q.length < 2) {
+    list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Введите название города для поиска</div>';
+    return;
+  }
+  list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">🔍 Поиск...</div>';
+  GEO.searchCities(q, '', results => {
+    if (!results.length) {
+      list.innerHTML = '<div style="padding:24px;text-align:center;color:var(--text3);font-size:13px">Город не найден</div>';
+      return;
+    }
+    list.innerHTML = results.map(r => {
+      const cEsc = r.name.replace(/'/g, "\\'");
+      const ctEsc = r.country.replace(/'/g, "\\'");
+      return `<button class="btn btn-out" style="margin-bottom:6px;text-align:left;width:100%;padding:10px 12px"
+        onclick="selDriverIcCity('${cEsc}','${ctEsc}')">
+        <strong>${r.name}</strong>
+        <span style="color:var(--text3);font-size:11px;margin-left:6px">${r.country}</span>
+      </button>`;
+    }).join('');
+  });
 }
 
 function selDriverIcCity(city, country) {
@@ -807,8 +810,8 @@ function updateDriverUI() {
     u.driverEarningsToday = 0;
   }
   _setText('dp-trips-today', u.driverTripsToday || 0);
-  _setText('dp-earnings-today', fmtPrice(u.driverEarningsToday || 0) + '₸');
-  _setText('dp-earnings-total', fmtPrice(u.driverEarnings || 0) + '₸');
+  _setText('dp-earnings-today', fmtMoney(u.driverEarningsToday || 0));
+  _setText('dp-earnings-total', fmtMoney(u.driverEarnings || 0));
   const icCity = STATE.driverIcCity || u.city || '—';
   _setText('d-ic-city-label', icCity);
   _setText('d-ic-city-label-offline', icCity);
@@ -937,7 +940,7 @@ async function renderDHistory() {
       <div class="hist-card">
         <div class="hist-hdr">
           <div class="hist-date">${fmtDate(o.createdAt)}</div>
-          <div class="hist-price">${fmtPrice(o.acceptedPrice || o.price)}₸</div>
+          <div class="hist-price">${fmtMoney(o.acceptedPrice || o.price, o.currency?.symbol)}</div>
         </div>
         <div class="hist-route">${escHtml(o.from)} → ${escHtml(o.to)}</div>
         <span class="hist-b hb-ok">✓ Завершена</span>

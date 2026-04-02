@@ -61,6 +61,8 @@ html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);fon
 .ac-item{padding:10px 14px;font-size:13px;font-weight:600;cursor:pointer;border-bottom:1px solid var(--border)}
 .ac-item:last-child{border-bottom:none}
 .ac-item:hover,.ac-item:active{background:var(--ydim);color:var(--y)}
+.ac-item.ac-loading{color:var(--text3);pointer-events:none;cursor:default}
+.ac-sub{color:var(--text3);font-size:11px;font-weight:500}
 
 /* ---- BUTTONS ---- */
 .btn{width:100%;padding:16px;border-radius:var(--r);border:none;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;transition:all var(--t);letter-spacing:.3px}

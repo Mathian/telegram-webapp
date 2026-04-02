@@ -19,6 +19,8 @@ tg.expand();
 
 // ---- Formatters ----
 function fmtPrice(n) { return n ? Number(n).toLocaleString('ru') : '0'; }
+// fmtMoney: formatted number + currency symbol (from order, user, or default ₸)
+function fmtMoney(n, sym) { return fmtPrice(n) + (sym || currSymbol()); }
 function fmtRating(r) { return r ? Number(r).toFixed(1) : '—'; }
 function fmtDate(iso) {
   if (!iso) return '';
@@ -87,50 +89,59 @@ function closeModal(id) {
   if (el) el.classList.remove('open');
 }
 
-// ---- Autocomplete country/city ----
+// ---- Currency helper ----
+// Returns the currency symbol for the current user (or default ₸)
+function currSymbol(userOverride) {
+  const u = userOverride || (typeof STATE !== 'undefined' && STATE.user);
+  return (u && u.currency && u.currency.symbol) || '₸';
+}
+
+// ---- Autocomplete country/city (via GEO API) ----
 function acCountry(val, prefix) {
+  // Clear hidden code value whenever user edits the text field
+  _setVal(`${prefix}-country`, '');
   const list = document.getElementById(`ac-country-${prefix}`);
   if (!list) return;
-  const filtered = Object.keys(COUNTRIES).filter(c =>
-    c.toLowerCase().includes(val.toLowerCase())
-  );
-  if (!filtered.length || !val) { list.classList.remove('open'); return; }
-  list.innerHTML = filtered.slice(0, 8).map(c =>
-    `<div class="ac-item" onclick="selectCountry('${c}','${prefix}')">${COUNTRIES[c].flag} ${c}</div>`
-  ).join('');
+  const results = GEO.searchCountries(val); // returns top-8 if val empty
+  if (!results.length) { list.classList.remove('open'); return; }
+  list.innerHTML = results.map(c => {
+    const safe = c.name.replace(/'/g, '&#39;');
+    return `<div class="ac-item" onclick="selectCountry('${safe}','${c.code}','${prefix}')">${c.flag} ${c.name}</div>`;
+  }).join('');
   list.classList.add('open');
 }
 
-function selectCountry(name, prefix) {
+function selectCountry(name, code, prefix) {
   _setVal(`${prefix}-country-input`, name);
-  _setVal(`${prefix}-country`, COUNTRIES[name].code);
-  document.getElementById(`ac-country-${prefix}`).classList.remove('open');
-  // Reset city
+  _setVal(`${prefix}-country`, code);
+  const list = document.getElementById(`ac-country-${prefix}`);
+  if (list) list.classList.remove('open');
+  // Reset city when country changes
   _setVal(`${prefix}-city-input`, '');
   _setVal(`${prefix}-city`, '');
 }
 
 function acCity(val, prefix) {
-  const countryCode = document.getElementById(`${prefix}-country`) ? document.getElementById(`${prefix}-country`).value : '';
-  const countryName = document.getElementById(`${prefix}-country-input`) ? document.getElementById(`${prefix}-country-input`).value : '';
-  let cities = [];
-  if (countryCode) {
-    const entry = Object.values(COUNTRIES).find(c => c.code === countryCode);
-    if (entry) cities = entry.cities;
-  } else if (countryName) {
-    const entry = COUNTRIES[countryName];
-    if (entry) cities = entry.cities;
-  } else {
-    cities = Object.values(COUNTRIES).flatMap(c => c.cities);
-  }
-  const filtered = val ? cities.filter(c => c.toLowerCase().includes(val.toLowerCase())) : cities;
+  // Clear hidden city value whenever user edits the text field
+  _setVal(`${prefix}-city`, '');
   const list = document.getElementById(`ac-city-${prefix}`);
   if (!list) return;
-  if (!filtered.length) { list.classList.remove('open'); return; }
-  list.innerHTML = filtered.slice(0, 10).map(c =>
-    `<div class="ac-item" onclick="selectCity('${c}','${prefix}')">${c}</div>`
-  ).join('');
+  if (!val || val.length < 2) { list.classList.remove('open'); return; }
+  const countryCode = document.getElementById(`${prefix}-country`)?.value || '';
+  // Show "searching" placeholder immediately
+  list.innerHTML = '<div class="ac-item ac-loading">🔍 Поиск...</div>';
   list.classList.add('open');
+  GEO.searchCities(val, countryCode, results => {
+    if (!results.length) {
+      list.innerHTML = '<div class="ac-item ac-loading">Ничего не найдено</div>';
+      return;
+    }
+    list.innerHTML = results.map(c => {
+      const safe = c.name.replace(/'/g, "\\'");
+      const sub = c.country ? `<span class="ac-sub">, ${c.country}</span>` : '';
+      return `<div class="ac-item" onclick="selectCity('${safe}','${prefix}')">${c.name}${sub}</div>`;
+    }).join('');
+  });
 }
 
 function selectCity(name, prefix) {

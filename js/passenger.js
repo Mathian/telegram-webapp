@@ -121,7 +121,7 @@ function handleOrderUpdate(order) {
 // ---- Active order box ----
 function updateAob(order) {
   _setText('p-aob-route', `${order.from} → ${order.to}`);
-  _setText('p-aob-meta', `${fmtPrice(order.price)}₸ · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}`);
+  _setText('p-aob-meta', `${fmtMoney(order.price, order.currency?.symbol)} · ${order.payMethod === 'cash' ? 'Наличные' : 'Перевод'}`);
 }
 
 // ---- Build single offer card HTML ----
@@ -144,7 +144,7 @@ function _buildOfferCard(o, orderId) {
           </div>
         </div>
         <div style="text-align:right">
-          <div class="offer-price">${fmtPrice(o.price)}₸</div>
+          <div class="offer-price">${fmtMoney(o.price, o.currency?.symbol)}</div>
           <div class="offer-eta">~${o.eta} мин</div>
         </div>
       </div>
@@ -249,7 +249,7 @@ function updateActiveRide(order) {
     _setText('p-ride-drv-name', drv.name);
     _setText('p-ride-drv-car', drv.car || '');
     _setText('p-ride-drv-rating', fmtRating(drv.rating));
-    _setText('p-ride-price', fmtPrice(drv.price) + '₸');
+    _setText('p-ride-price', fmtMoney(drv.price, STATE.activeOrder?.currency?.symbol));
     _setText('p-ride-meta', `Водитель: ${drv.name}`);
   }
   const alertEl = document.getElementById('p-arrival-alert');
@@ -341,6 +341,7 @@ async function createOrder() {
     status: 'searching',
     offers: [],
     city: STATE.user.city,
+    currency: STATE.user.currency || { code: 'KZT', symbol: '₸' },
     type: 'city',
     createdAt: new Date().toISOString(),
   };
@@ -476,7 +477,7 @@ async function renderPHistory() {
       <div class="hist-card">
         <div class="hist-hdr">
           <div class="hist-date">${fmtDate(o.createdAt)}</div>
-          <div class="hist-price">${fmtPrice(o.acceptedDriver ? o.acceptedDriver.price : o.price)}₸</div>
+          <div class="hist-price">${fmtMoney(o.acceptedDriver ? o.acceptedDriver.price : o.price, o.currency?.symbol)}</div>
         </div>
         <div class="hist-route">${escHtml(o.from)} → ${escHtml(o.to)}</div>
         ${o.status === 'done'
@@ -517,30 +518,28 @@ function openAddrModal(target) {
     const cityList = document.getElementById('mo-city-ac-list');
     if (cityInput && cityList) {
       cityInput.oninput = function() {
-        const q = this.value.trim().toLowerCase();
+        const q = this.value.trim();
         cityList.innerHTML = '';
-        if (q.length < 1) { cityList.classList.remove('open'); return; }
-        const matches = [];
-        Object.entries(window.COUNTRIES || {}).forEach(([name, c]) => {
-          (c.cities || []).forEach(city => {
-            if (city.toLowerCase().includes(q) || name.toLowerCase().includes(q))
-              matches.push({ city, country: name });
-          });
-        });
-        if (!matches.length) { cityList.classList.remove('open'); return; }
-        matches.slice(0, 10).forEach(m => {
-          const li = document.createElement('div');
-          li.className = 'ac-item';
-          li.textContent = m.city + ', ' + m.country;
-          li.onclick = () => {
-            cityInput.value = m.city;
-            if (STATE.addrTarget === 'ic-from') STATE.icFromCity = m.city;
-            if (STATE.addrTarget === 'ic-to') STATE.icToCity = m.city;
-            cityList.classList.remove('open');
-          };
-          cityList.appendChild(li);
-        });
+        if (q.length < 2) { cityList.classList.remove('open'); return; }
+        cityList.innerHTML = '<div class="ac-item ac-loading">🔍 Поиск...</div>';
         cityList.classList.add('open');
+        GEO.searchCities(q, '', results => {
+          if (!results.length) { cityList.classList.remove('open'); return; }
+          cityList.innerHTML = '';
+          results.forEach(m => {
+            const li = document.createElement('div');
+            li.className = 'ac-item';
+            li.innerHTML = `${m.name}<span class="ac-sub">, ${m.country}</span>`;
+            li.onclick = () => {
+              cityInput.value = m.name;
+              if (STATE.addrTarget === 'ic-from') STATE.icFromCity = m.name;
+              if (STATE.addrTarget === 'ic-to') STATE.icToCity = m.name;
+              cityList.classList.remove('open');
+            };
+            cityList.appendChild(li);
+          });
+          cityList.classList.add('open');
+        });
       };
     }
   }

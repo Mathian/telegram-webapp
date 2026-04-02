@@ -58,6 +58,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // Load app settings (bonus system, TON wallet, etc.)
   loadAppSettings();
 
+  // Pre-load countries list in background (non-blocking)
+  GEO.init();
+
   // Boot sequence
   setTimeout(async () => {
     _show('s-splash', false);
@@ -151,8 +154,8 @@ function updateAllUI() {
   _setText('dp-rating', fmtRating(u.rating));
   _setText('dp-shift-trips', STATE.shiftTrips || 0);
   _setText('dp-trips-today', u.driverTripsToday || 0);
-  _setText('dp-earnings-today', fmtPrice(u.driverEarningsToday || 0) + '₸');
-  _setText('dp-earnings-total', fmtPrice(u.driverEarnings || 0) + '₸');
+  _setText('dp-earnings-today', fmtMoney(u.driverEarningsToday || 0));
+  _setText('dp-earnings-total', fmtMoney(u.driverEarnings || 0));
   updateTonStatus();
 }
 
@@ -164,7 +167,7 @@ function updateTonStatus() {
   const el = document.getElementById('dp-ton-desc');
   if (el) {
     el.textContent = isFree
-      ? `Бесплатный период до ${fmtDate(freeUntil.toISOString())}. После — 500₸/день.`
+      ? `Бесплатный период до ${fmtDate(freeUntil.toISOString())}. После — ${fmtMoney(500)}/день.`
       : 'Бесплатный период истёк. Оплачивайте каждую смену через TON.';
   }
   const warn = document.getElementById('d-pay-warning');

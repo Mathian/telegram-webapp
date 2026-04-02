@@ -143,6 +143,7 @@ async function createIcOrder() {
       contacts: [],
       city: STATE.user.city,
       icFromCity: STATE.icFromCity || STATE.user.city,
+      currency: STATE.user.currency || { code: 'KZT', symbol: '₸' },
       createdAt: new Date().toISOString(),
     });
     _setVal('ic-price', '');
@@ -195,7 +196,7 @@ async function renderIcMyOrders() {
         <div class="ord-bot">
           <div>
             <div style="font-size:10px;color:var(--text3)">${escHtml(o.icType || '')}</div>
-            <div class="offer-price">${fmtPrice(o.price)}₸</div>
+            <div class="offer-price">${fmtMoney(o.price, o.currency?.symbol)}</div>
           </div>
           ${isSearching ? `<div style="display:flex;gap:7px">
             <button class="btn btn-y btn-sm" onclick="icClose('${o.id}')">Закрыть заявку ✓</button>
