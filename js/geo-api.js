@@ -85,6 +85,22 @@ const GEO = (() => {
     return _countries.find(c => c.code === (code || '').toLowerCase()) || null;
   }
 
+  // ---- Normalize city name: strip administrative suffixes ----
+  function _normalizeCity(name) {
+    if (!name) return '';
+    return name
+      .replace(/\s+[Гг]\.[Аа]\b\.?/g, '')           // "г.а." — городская администрация
+      .replace(/\s+[Гг][Оо]\b\.?/g, '')              // "г.о." — городской округ
+      .replace(/\s+[Гг]ород(ской)?\s+[Оо]круг\b/gi, '')
+      .replace(/\s+[Мм]униципальный\s+[Рр]айон\b/gi, '')
+      .replace(/\s+[Мм]униципальный\s+[Оо]круг\b/gi, '')
+      .replace(/\s+[Рр]айон\b/gi, '')
+      .replace(/\s+[Оо]бласть\b/gi, '')
+      .replace(/^[Гг]\.\s*/, '')                     // leading "г." prefix
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  }
+
   // ---- Search cities via Nominatim (async, debounced, cached) ----
   const SETTLEMENT = new Set([
     'city','town','village','municipality','hamlet',
@@ -117,8 +133,10 @@ const GEO = (() => {
           .filter(r => r.addresstype && SETTLEMENT.has(r.addresstype))
           .map(r => {
             const addr = r.address || {};
-            const name = addr.city || addr.town || addr.village
-                      || addr.suburb || addr.borough || r.name;
+            // Prefer canonical address fields; normalize to remove admin suffixes
+            const raw = addr.city || addr.town || addr.village
+                     || addr.suburb || addr.borough || r.name;
+            const name = _normalizeCity(raw);
             return {
               name,
               country: addr.country || '',
@@ -126,8 +144,10 @@ const GEO = (() => {
             };
           })
           .filter(r => {
-            if (!r.name || seen.has(r.name.toLowerCase())) return false;
-            seen.add(r.name.toLowerCase());
+            if (!r.name) return false;
+            const key = r.name.toLowerCase() + '_' + r.countryCode.toLowerCase();
+            if (seen.has(key)) return false;
+            seen.add(key);
             return true;
           });
 

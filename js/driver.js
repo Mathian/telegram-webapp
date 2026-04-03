@@ -147,11 +147,12 @@ function _buildCityCardHtml(o) {
   if (pd) {
     const rem = Math.max(0, OFFER_TTL - (Date.now() - new Date(pd.offerTime).getTime()));
     const pct = rem / OFFER_TTL * 100;
+    const remSec = Math.ceil(rem / 1000);
     botHtml = `
       <div class="ord-bot" style="flex-direction:column;gap:6px">
         <div style="display:flex;justify-content:space-between;align-items:center">
           <div><div style="font-size:10px;color:var(--text3)">Ваше предложение</div><div class="offer-price">${fmtMoney(pd.price, o.currency?.symbol)}</div></div>
-          <span class="tag tag-g">⏳ Ожидание пассажира</span>
+          <span class="tag tag-g">⏳ Пассажир решает: <span id="dopb-sec-${o.id}">${remSec}</span>с</span>
         </div>
         <div class="offer-progress-wrap"><div class="offer-progress-bar" id="dopb-${o.id}" style="width:${pct.toFixed(1)}%"></div></div>
       </div>`;
@@ -273,7 +274,9 @@ function _startDriverOfferCountdown() {
     Object.entries(_pendingOfferData).forEach(([orderId, pd]) => {
       const rem = Math.max(0, OFFER_TTL - (nowMs - new Date(pd.offerTime).getTime()));
       const bar = document.getElementById('dopb-' + orderId);
+      const sec = document.getElementById('dopb-sec-' + orderId);
       if (bar) bar.style.width = (rem / OFFER_TTL * 100).toFixed(1) + '%';
+      if (sec) sec.textContent = Math.ceil(rem / 1000);
       if (rem <= 0) expiredIds.push(orderId);
     });
     expiredIds.forEach(orderId => {
@@ -371,6 +374,8 @@ async function submitOffer() {
   // Store pending offer data for countdown display
   _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
   watchPendingOffer(orderId);
+  // Immediately re-render card to show countdown bar, don't wait for Firestore callback
+  renderDriverOrders(_lastKnownOrders, _lastKnownMode);
   closeModal('mo-drv-offer');
   showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
 }
@@ -461,6 +466,8 @@ async function drvAcceptOrder(orderId, price) {
   // Store pending offer data for countdown display
   _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
   watchPendingOffer(orderId);
+  // Immediately re-render card to show countdown bar, don't wait for Firestore callback
+  renderDriverOrders(_lastKnownOrders, _lastKnownMode);
   showToast('Предложение отправлено! Ожидайте выбора пассажира ⏳', 'ok');
   tg.HapticFeedback.impactOccurred('light');
 }
