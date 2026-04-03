@@ -587,27 +587,77 @@ async function finishRide() {
   setTimeout(() => openRatingModal('passenger', orderId), 700);
 }
 
-// ---- Driver cancel ride ----
-async function driverCancelRide() {
-  tg.showConfirm('Отменить поездку?', async ok => {
-    if (!ok) return;
-    if (STATE.driverActiveOrderId) {
-      await dbSet('orders', STATE.driverActiveOrderId, {
-        status: 'cancelled',
-        cancelledBy: 'driver',
-        cancelledAt: new Date().toISOString(),
-        cancelReason: ''
+// ---- Driver cancel ride — ask reason first ----
+function driverCancelRide() {
+  openModal('mo-drv-cancel');
+}
+
+async function submitDriverCancel(reason) {
+  closeModal('mo-drv-cancel');
+  if (!STATE.driverActiveOrderId) return;
+
+  const orderId = STATE.driverActiveOrderId;
+  const order = await dbGet('orders', orderId);
+
+  if (reason === 'no_passenger') {
+    // Capture driver geo, ask passenger to respond
+    const geo = await _getCurrentGeo();
+    if (order && order.passengerId) {
+      await sendNotification(order.passengerId, {
+        type: 'no_passenger_q',
+        orderId,
+        driverUid: STATE.uid,
+        driverGeo: geo,
       });
-      await dbSet('driver_shifts', STATE.uid + '_shift', { hasActiveOrder: false });
-      STATE.driverActiveOrderId = null;
-      saveState();
-      if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
+      // 11-second sender-side timeout — if passenger doesn't respond, apply penalty
+      const passengerId = order.passengerId;
+      setTimeout(async () => {
+        try {
+          const notif = await dbGet('notifications', passengerId + '_pending');
+          if (notif && notif.status === 'pending') {
+            const penalty = window._appSettings?.passengerCancelPenalty ?? 0.1;
+            await applyRatingPenalty(passengerId, penalty);
+            await recordDailyCancel(passengerId);
+            await checkAutoBlock(passengerId, 'passenger');
+            await dbSet('notifications', passengerId + '_pending', { status: 'expired' });
+          }
+        } catch (e) { console.warn('[sender-timer no_passenger]', e); }
+      }, 11000);
     }
-    _show('d-active-order', false);
-    updateDriverUI();
-    startListeningOrders();
-    showToast('Поездка отменена');
+  } else {
+    // 'changed_mind', 'accidental', 'breakdown' — penalty for driver
+    const penalty = window._appSettings?.driverCancelPenalty ?? 0.05;
+    await applyRatingPenalty(STATE.uid, penalty);
+    await recordDailyCancel(STATE.uid);
+    await checkAutoBlock(STATE.uid, 'driver');
+    showToast('Ваш рейтинг снижен', 'warn');
+    // Notify passenger that driver cancelled
+    if (order && order.passengerId) {
+      await sendNotification(order.passengerId, {
+        type: 'driver_cancelled_info',
+        orderId,
+        message: 'Водитель отменил заказ. Создайте заявку заново.',
+      });
+    }
+  }
+
+  // Cancel the order
+  await dbSet('orders', orderId, {
+    status: 'cancelled',
+    cancelledBy: 'driver',
+    cancelReason: reason,
+    cancelledAt: new Date().toISOString()
   });
+  await dbSet('driver_shifts', STATE.uid + '_shift', { hasActiveOrder: false });
+
+  STATE.driverActiveOrderId = null;
+  saveState();
+  if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
+
+  _show('d-active-order', false);
+  updateDriverUI();
+  startListeningOrders();
+  showToast('Поездка отменена');
 }
 
 // ---- Shift management ----

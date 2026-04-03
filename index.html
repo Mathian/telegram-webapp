@@ -778,6 +778,84 @@
   </div>
 </div>
 
+<!-- ===================== BLOCKED SCREEN ===================== -->
+<div class="screen" id="s-blocked">
+  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center;gap:14px">
+    <div style="font-size:64px">🚫</div>
+    <div style="font-size:22px;font-weight:800;color:var(--err)">Временная блокировка</div>
+    <div style="font-size:14px;color:var(--text2);line-height:1.6;max-width:300px">
+      Из-за большого числа отмен или диспутов доступ временно ограничен.
+    </div>
+    <div style="font-size:13px;font-weight:700;color:var(--text3)" id="s-blocked-until"></div>
+    <div style="font-size:12px;color:var(--text3);margin-top:4px">Напишите в поддержку для досрочной разблокировки.</div>
+    <button class="btn btn-out" style="margin-top:8px" onclick="openSupportChat()">💬 Написать в поддержку</button>
+  </div>
+</div>
+
+<!-- ===================== CANCEL MODALS ===================== -->
+
+<!-- Passenger: cancel while searching -->
+<div class="mo" id="mo-pax-cancel-search">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">Причина отмены</div>
+    <div class="slabel" style="margin-bottom:12px">Почему вы отменяете заказ?</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-out" onclick="submitPassengerCancelSearch('changed_mind')">😐 Передумал</button>
+      <button class="btn btn-out" onclick="submitPassengerCancelSearch('too_long')">⏳ Долго ждать</button>
+      <button class="btn btn-out" onclick="submitPassengerCancelSearch('found_other')">🚌 Нашёл другой транспорт</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="closeModal('mo-pax-cancel-search')">← Назад</button>
+  </div>
+</div>
+
+<!-- Passenger: cancel active ride -->
+<div class="mo" id="mo-pax-cancel-active">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">Причина отмены</div>
+    <div class="slabel" style="margin-bottom:12px">Почему вы отменяете поездку?</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-out" onclick="submitPassengerCancelActive('not_needed')">😐 Уже не нужно</button>
+      <button class="btn btn-out" onclick="submitPassengerCancelActive('too_long')">⏳ Долго жду водителя</button>
+      <button class="btn btn-out" onclick="submitPassengerCancelActive('driver_late')">🚗 Водитель не приехал</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="closeModal('mo-pax-cancel-active')">← Назад</button>
+  </div>
+</div>
+
+<!-- Driver: cancel active ride -->
+<div class="mo" id="mo-drv-cancel">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle">Причина отмены</div>
+    <div class="slabel" style="margin-bottom:12px">Почему вы отменяете поездку?</div>
+    <div style="display:flex;flex-direction:column;gap:8px">
+      <button class="btn btn-out" onclick="submitDriverCancel('changed_mind')">😐 Передумал</button>
+      <button class="btn btn-out" onclick="submitDriverCancel('accidental')">🤦 Принял случайно</button>
+      <button class="btn btn-out" onclick="submitDriverCancel('breakdown')">🔧 Сломался</button>
+      <button class="btn btn-out" onclick="submitDriverCancel('no_passenger')">❓ Пассажира нет на месте</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:12px" onclick="closeModal('mo-drv-cancel')">← Назад</button>
+  </div>
+</div>
+
+<!-- Response notification modal (10-second countdown) -->
+<div class="mo" id="mo-response-notif">
+  <div class="ms">
+    <div class="mhandle"></div>
+    <div class="mtitle" id="rn-title">Уведомление</div>
+    <div style="font-size:14px;color:var(--text2);margin-bottom:16px;line-height:1.5" id="rn-message"></div>
+    <div id="rn-buttons" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+        <div id="rn-timer-bar" style="height:100%;background:var(--y);border-radius:3px;width:100%"></div>
+      </div>
+      <div style="font-size:12px;color:var(--text3);min-width:28px;text-align:right"><span id="rn-seconds">10</span>с</div>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <!-- ===================== SCRIPTS ===================== -->
@@ -793,6 +871,7 @@
 <script src="js/intercity.js"></script>
 <script src="js/chat.js"></script>
 <script src="js/payment.js"></script>
+<script src="js/disputes.js"></script>
 <script src="js/rating.js"></script>
 <script src="js/legal.js"></script>
 <script src="js/app.js"></script>

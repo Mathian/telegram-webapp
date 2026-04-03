@@ -106,6 +106,23 @@ async function initMain() {
       if (fresh) { STATE.user = { ...STATE.user, ...fresh }; saveState(); }
     } catch (e) { console.warn('[initMain] reload:', e); }
   }
+
+  // Check temporary block
+  if (STATE.user && STATE.user.tempBlocked && STATE.user.tempBlockedUntil) {
+    if (new Date(STATE.user.tempBlockedUntil) > new Date()) {
+      showLoading(false);
+      setupNotificationListener();
+      _showBlockedScreen(STATE.user.tempBlockedUntil);
+      return;
+    } else {
+      // Block expired — auto-unblock
+      STATE.user.tempBlocked = false;
+      STATE.user.tempBlockedUntil = null;
+      saveState();
+      try { await dbSet('users', STATE.uid, { tempBlocked: false, tempBlockedUntil: null }); } catch (_) {}
+    }
+  }
+
   // Daily stats reset on app load
   if (STATE.user) {
     const today = new Date().toDateString();
@@ -118,6 +135,7 @@ async function initMain() {
   }
   showLoading(false);
   updateAllUI();
+  setupNotificationListener();
   setTimeout(() => checkSupportUnread && checkSupportUnread(), 2000);
   if (STATE.role === 'passenger') {
     showScreen('s-passenger');

@@ -369,27 +369,30 @@ async function createOrder() {
   btn.disabled = false;
 }
 
-// ---- Cancel order (searching phase) ----
-async function cancelOrder() {
-  tg.showConfirm('Отменить заказ?', async ok => {
-    if (!ok) return;
-    if (STATE.activeOrderId) {
-      await dbSet('orders', STATE.activeOrderId, {
-        status: 'cancelled',
-        cancelledBy: 'passenger',
-        cancelledAt: new Date().toISOString()
-      });
-      STATE.activeOrderId = null;
-      STATE.arrivalAcknowledged = false;
-      saveState();
-      if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
-      stopGeoTransmit();
-    }
-    if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
-    _show('p-searching', false);
-    _show('p-new-order', true);
-    showToast('Заказ отменён');
-  });
+// ---- Cancel order (searching phase) — ask reason first ----
+function cancelOrder() {
+  openModal('mo-pax-cancel-search');
+}
+
+async function submitPassengerCancelSearch(reason) {
+  closeModal('mo-pax-cancel-search');
+  if (STATE.activeOrderId) {
+    await dbSet('orders', STATE.activeOrderId, {
+      status: 'cancelled',
+      cancelledBy: 'passenger',
+      cancelReason: reason,
+      cancelledAt: new Date().toISOString()
+    });
+    STATE.activeOrderId = null;
+    STATE.arrivalAcknowledged = false;
+    saveState();
+    if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
+    stopGeoTransmit();
+  }
+  if (window._offerCountdown) { clearInterval(window._offerCountdown); window._offerCountdown = null; }
+  _show('p-searching', false);
+  _show('p-new-order', true);
+  showToast('Заказ отменён');
 }
 
 // ---- Accept offer ----
@@ -436,27 +439,65 @@ async function passengerBoarded() {
   tg.HapticFeedback.notificationOccurred('success');
 }
 
-// ---- Cancel active ride (passenger side) ----
-async function passengerCancelRide() {
-  tg.showConfirm('Отменить поездку?', async ok => {
-    if (!ok) return;
-    if (STATE.activeOrderId) {
-      await dbSet('orders', STATE.activeOrderId, {
-        status: 'cancelled',
-        cancelledBy: 'passenger',
-        cancelledAt: new Date().toISOString()
-      });
-      STATE.activeOrderId = null;
-      STATE.arrivalAcknowledged = false;
-      saveState();
-      if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
-      stopArrivalSound();
-      stopGeoTransmit();
-    }
-    _show('p-active-ride', false);
-    _show('p-new-order', true);
-    showToast('Поездка отменена');
+// ---- Cancel active ride (passenger side) — ask reason first ----
+function passengerCancelRide() {
+  openModal('mo-pax-cancel-active');
+}
+
+async function submitPassengerCancelActive(reason) {
+  closeModal('mo-pax-cancel-active');
+  if (!STATE.activeOrderId) return;
+
+  const orderId = STATE.activeOrderId;
+  const order = await dbGet('orders', orderId);
+
+  if (reason === 'driver_late' && order && order.acceptedDriver && order.acceptedDriver.driverId) {
+    // Driver claims they arrived but didn't — ask driver to respond
+    await sendNotification(order.acceptedDriver.driverId, {
+      type: 'driver_late_q',
+      orderId,
+      passengerId: STATE.uid,
+    });
+    // 11-second sender-side timeout — if driver doesn't respond, apply penalty to driver
+    const driverId = order.acceptedDriver.driverId;
+    setTimeout(async () => {
+      try {
+        const notif = await dbGet('notifications', driverId + '_pending');
+        if (notif && notif.status === 'pending') {
+          const penalty = window._appSettings?.driverCancelPenalty ?? 0.05;
+          await applyRatingPenalty(driverId, penalty);
+          await recordDailyCancel(driverId);
+          await checkAutoBlock(driverId, 'driver');
+          await dbSet('notifications', driverId + '_pending', { status: 'expired' });
+        }
+      } catch (e) { console.warn('[sender-timer driver_late]', e); }
+    }, 11000);
+  } else {
+    // 'not_needed' or 'too_long' — penalty for passenger
+    const penalty = window._appSettings?.passengerCancelPenalty ?? 0.1;
+    await applyRatingPenalty(STATE.uid, penalty);
+    await recordDailyCancel(STATE.uid);
+    await checkAutoBlock(STATE.uid, 'passenger');
+    showToast('Ваш рейтинг снижен', 'warn');
+  }
+
+  // Cancel the order
+  await dbSet('orders', orderId, {
+    status: 'cancelled',
+    cancelledBy: 'passenger',
+    cancelReason: reason,
+    cancelledAt: new Date().toISOString()
   });
+
+  STATE.activeOrderId = null;
+  STATE.arrivalAcknowledged = false;
+  saveState();
+  if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
+  stopArrivalSound();
+  stopGeoTransmit();
+  _show('p-active-ride', false);
+  _show('p-new-order', true);
+  showToast('Поездка отменена');
 }
 
 // ---- History ----

@@ -98,6 +98,7 @@ function showPage(page) {
   else if (page === 'orders') loadOrders();
   else if (page === 'intercity') loadIntercity();
   else if (page === 'support') loadSupportChats();
+  else if (page === 'disputes') loadDisputes();
   else if (page === 'settings') loadSettings();
 }
 
@@ -200,6 +201,14 @@ async function loadDashboard() {
     const badge = document.getElementById('nav-pending-badge');
     badge.textContent = pending.length; badge.style.display = 'inline';
   }
+
+  // Load disputes badge in background
+  try {
+    const disputes = await getAllFromFirebase('disputes');
+    const pendingDisputes = disputes.filter(d => d.status === 'pending').length;
+    const dbadge = document.getElementById('nav-disputes-badge');
+    if (dbadge) { dbadge.textContent = pendingDisputes; dbadge.style.display = pendingDisputes > 0 ? '' : 'none'; }
+  } catch (_) {}
 
   const recent = orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)).slice(0, 8);
   const recentEl = document.getElementById('dash-recent-orders');
@@ -566,6 +575,8 @@ function updateSettingsUI() {
   if (appSettings.shiftPrice) document.getElementById('set-shift-price').value = appSettings.shiftPrice;
   if (appSettings.tonWallet) document.getElementById('set-ton-wallet').value = appSettings.tonWallet;
   if (appSettings.freeDays) document.getElementById('set-free-days').value = appSettings.freeDays;
+  if (appSettings.passengerCancelPenalty !== undefined) document.getElementById('set-pax-penalty').value = appSettings.passengerCancelPenalty;
+  if (appSettings.driverCancelPenalty   !== undefined) document.getElementById('set-drv-penalty').value = appSettings.driverCancelPenalty;
 }
 
 async function toggleSetting(key) {
@@ -594,6 +605,18 @@ async function saveFreeDays() {
   appSettings.freeDays = days;
   if (isFirebaseReady) { try { await db.collection('settings').doc('app').set({ freeDays: days }, { merge: true }); } catch (e) {} }
   showToast('Сохранено ✅', 'ok');
+}
+
+async function savePenaltySettings() {
+  const pax = parseFloat(document.getElementById('set-pax-penalty').value);
+  const drv = parseFloat(document.getElementById('set-drv-penalty').value);
+  if (isNaN(pax) || isNaN(drv)) { showToast('Введите корректные значения', 'err'); return; }
+  appSettings.passengerCancelPenalty = pax;
+  appSettings.driverCancelPenalty = drv;
+  if (isFirebaseReady) {
+    try { await db.collection('settings').doc('app').set({ passengerCancelPenalty: pax, driverCancelPenalty: drv }, { merge: true }); } catch (e) {}
+  }
+  showToast('Штрафные коэффициенты сохранены ✅', 'ok');
 }
 
 function copyRules() {
@@ -628,6 +651,203 @@ service cloud.firestore {
   }
 }`;
   navigator.clipboard.writeText(text).then(() => showToast('Скопировано! ✅', 'ok')).catch(() => showToast('Скопируйте вручную', 'err'));
+}
+
+// ============================================================
+// DISPUTES
+// ============================================================
+
+let _allDisputes = [];
+let _disputeFilter = 'pending';
+
+async function loadDisputes() {
+  const list = document.getElementById('disputes-list');
+  if (list) list.innerHTML = '<div class="empty-state" style="padding:32px;text-align:center;color:var(--text3)">Загрузка...</div>';
+  try {
+    _allDisputes = await getAllFromFirebase('disputes');
+    _allDisputes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    renderDisputes();
+    // Update badge
+    const pending = _allDisputes.filter(d => d.status === 'pending').length;
+    const badge = document.getElementById('nav-disputes-badge');
+    if (badge) { badge.textContent = pending; badge.style.display = pending > 0 ? '' : 'none'; }
+  } catch (e) {
+    if (list) list.innerHTML = '<div class="empty-state" style="padding:32px;text-align:center;color:var(--text3)">Ошибка загрузки</div>';
+  }
+}
+
+function filterDisputes(filter) {
+  _disputeFilter = filter;
+  renderDisputes();
+}
+
+function renderDisputes() {
+  const list = document.getElementById('disputes-list');
+  if (!list) return;
+  let disputes = _allDisputes;
+  if (_disputeFilter === 'pending') disputes = disputes.filter(d => d.status === 'pending');
+  else if (_disputeFilter === 'resolved') disputes = disputes.filter(d => d.status !== 'pending');
+
+  if (!disputes.length) {
+    list.innerHTML = '<div class="empty-state" style="padding:32px;text-align:center;color:var(--text3)">Нет диспутов</div>';
+    return;
+  }
+
+  const typeLabel = { driver_late: '🚗 Водитель опоздал', no_passenger: '❓ Пассажира нет' };
+  list.innerHTML = disputes.map(d => {
+    const isPending = d.status === 'pending';
+    const typeStr = typeLabel[d.type] || d.type;
+    return `
+    <div class="table-wrap" style="margin-bottom:16px">
+      <div class="table-hdr" style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong>${d.id}</strong>
+          <span style="margin-left:8px;font-size:12px;color:var(--text3)">${typeStr}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          ${isPending ? '<span class="badge b-yellow">⏳ Ожидает</span>' : '<span class="badge b-green">✓ Решён</span>'}
+          <span style="font-size:11px;color:var(--text3)">${fmtDate(d.createdAt)}</span>
+        </div>
+      </div>
+      <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;gap:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">ПАССАЖИР</div>
+            <div style="font-weight:700">${d.passengerName || '—'}</div>
+            <div style="font-size:12px;color:var(--text2)">${d.passengerPhone || '—'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">
+              Побед: ${d.passengerDisputesWon || 0} / Поражений: ${d.passengerDisputesLost || 0}
+            </div>
+          </div>
+          <div style="flex:1;min-width:200px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">ВОДИТЕЛЬ</div>
+            <div style="font-weight:700">${d.driverName || '—'}</div>
+            <div style="font-size:12px;color:var(--text2)">${d.driverPhone || '—'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:4px">
+              Побед: ${d.driverDisputesWon || 0} / Поражений: ${d.driverDisputesLost || 0}
+            </div>
+          </div>
+        </div>
+        <div style="font-size:13px;color:var(--text2)">
+          📍 ${d.from || '—'} → ${d.to || '—'}
+        </div>
+        ${d.driverGeo ? `<div style="font-size:11px;color:var(--text3)">📌 Гео водителя: ${d.driverGeo.lat.toFixed(5)}, ${d.driverGeo.lng.toFixed(5)}</div>` : ''}
+        ${d.passengerGeo ? `<div style="font-size:11px;color:var(--text3)">📌 Гео пассажира: ${d.passengerGeo.lat.toFixed(5)}, ${d.passengerGeo.lng.toFixed(5)}</div>` : ''}
+        ${d.resolution ? `<div style="font-size:13px;color:var(--text2);margin-top:4px">Решение: <strong>${_resolutionLabel(d.resolution)}</strong></div>` : ''}
+        ${isPending ? `
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;border-top:1px solid var(--border);padding-top:12px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);width:100%;margin-bottom:4px">Решение администратора:</div>
+          <button class="btn-sm btn-danger" onclick="resolveDispute('${d.id}','passenger_guilty')">👎 Виноват пассажир</button>
+          <button class="btn-sm btn-danger" onclick="resolveDispute('${d.id}','driver_guilty')">👎 Виноват водитель</button>
+          <button class="btn-sm btn-view" onclick="resolveDispute('${d.id}','both_guilty')">⚠️ Оба виноваты</button>
+          <button class="btn-sm btn-view" onclick="resolveDispute('${d.id}','draw')">🤝 Ничья</button>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function _resolutionLabel(r) {
+  const map = { passenger_guilty: '👎 Виноват пассажир', driver_guilty: '👎 Виноват водитель', both_guilty: '⚠️ Оба виноваты', draw: '🤝 Ничья' };
+  return map[r] || r;
+}
+
+async function resolveDispute(disputeId, resolution) {
+  if (!isFirebaseReady) { showToast('Firebase не подключён', 'err'); return; }
+  try {
+    const dispute = _allDisputes.find(d => d.id === disputeId);
+    if (!dispute) { showToast('Диспут не найден', 'err'); return; }
+
+    const penalty = appSettings.passengerCancelPenalty || 0.1;
+    const dPenalty = appSettings.driverCancelPenalty || 0.05;
+    const now = new Date().toISOString();
+
+    // Apply penalties and update stats
+    if (resolution === 'passenger_guilty' || resolution === 'both_guilty') {
+      await _adminApplyPenalty(dispute.passengerId, penalty, 'lost');
+    } else {
+      await _adminUpdateDisputeStats(dispute.passengerId, 'won');
+    }
+    if (resolution === 'driver_guilty' || resolution === 'both_guilty') {
+      await _adminApplyPenalty(dispute.driverUid, dPenalty, 'lost');
+    } else {
+      await _adminUpdateDisputeStats(dispute.driverUid, 'won');
+    }
+
+    // Mark dispute resolved
+    await db.collection('disputes').doc(disputeId).set({
+      status: 'resolved',
+      resolution,
+      resolvedAt: now,
+    }, { merge: true });
+
+    // Notify passenger
+    await _adminSendNotification(dispute.passengerId, {
+      type: 'dispute_result',
+      message: resolution === 'passenger_guilty'
+        ? '⚠️ По диспуту принято решение: рейтинг снижен.'
+        : resolution === 'both_guilty'
+        ? '⚠️ По диспуту принято решение: обе стороны получили штраф.'
+        : '✅ По диспуту принято решение в вашу пользу.',
+      msgType: (resolution === 'passenger_guilty' || resolution === 'both_guilty') ? 'warn' : 'ok',
+    });
+
+    // Notify driver
+    await _adminSendNotification(dispute.driverUid, {
+      type: 'dispute_result',
+      message: resolution === 'driver_guilty'
+        ? '⚠️ По диспуту принято решение: рейтинг снижен.'
+        : resolution === 'both_guilty'
+        ? '⚠️ По диспуту принято решение: обе стороны получили штраф.'
+        : '✅ По диспуту принято решение в вашу пользу.',
+      msgType: (resolution === 'driver_guilty' || resolution === 'both_guilty') ? 'warn' : 'ok',
+    });
+
+    // Update local list
+    const idx = _allDisputes.findIndex(d => d.id === disputeId);
+    if (idx !== -1) _allDisputes[idx] = { ..._allDisputes[idx], status: 'resolved', resolution, resolvedAt: now };
+    renderDisputes();
+    showToast('Диспут решён ✅', 'ok');
+  } catch (e) {
+    showToast('Ошибка: ' + e.message, 'err');
+  }
+}
+
+async function _adminApplyPenalty(uid, amount, outcome) {
+  if (!uid) return;
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    const user = snap.exists ? snap.data() : {};
+    const newRating = Math.max(1.0, Math.round(((user.rating || 5.0) - amount) * 100) / 100);
+    const update = { rating: newRating };
+    if (outcome === 'lost') update.disputesLost = (user.disputesLost || 0) + 1;
+    else update.disputesWon = (user.disputesWon || 0) + 1;
+    await db.collection('users').doc(uid).set(update, { merge: true });
+  } catch (e) { console.warn('[adminPenalty]', e); }
+}
+
+async function _adminUpdateDisputeStats(uid, outcome) {
+  if (!uid) return;
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    const user = snap.exists ? snap.data() : {};
+    const update = outcome === 'won'
+      ? { disputesWon: (user.disputesWon || 0) + 1 }
+      : { disputesLost: (user.disputesLost || 0) + 1 };
+    await db.collection('users').doc(uid).set(update, { merge: true });
+  } catch (e) {}
+}
+
+async function _adminSendNotification(uid, data) {
+  if (!uid) return;
+  try {
+    await db.collection('notifications').doc(uid + '_pending').set({
+      ...data,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      expiresAt: new Date(Date.now() + 30000).toISOString(), // 30s for admin-sent notifications
+    }, { merge: false });
+  } catch (e) { console.warn('[adminNotif]', e); }
 }
 
 // ============================================================
