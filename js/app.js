@@ -108,18 +108,39 @@ async function initMain() {
   }
 
   // Check temporary block
-  if (STATE.user && STATE.user.tempBlocked && STATE.user.tempBlockedUntil) {
-    if (new Date(STATE.user.tempBlockedUntil) > new Date()) {
-      showLoading(false);
-      setupNotificationListener();
-      _showBlockedScreen(STATE.user.tempBlockedUntil);
-      return;
-    } else {
-      // Block expired — auto-unblock
-      STATE.user.tempBlocked = false;
-      STATE.user.tempBlockedUntil = null;
-      saveState();
-      try { await dbSet('users', STATE.uid, { tempBlocked: false, tempBlockedUntil: null }); } catch (_) {}
+  if (STATE.user && STATE.user.tempBlocked) {
+    const reason = STATE.user.tempBlockReason;
+
+    if (reason === 'pending_disputes') {
+      // Блок до решения диспутов — проверить актуальное количество
+      const pendingCount = await _countPendingDisputes(STATE.uid).catch(() => 99);
+      if (pendingCount >= 3) {
+        showLoading(false);
+        setupNotificationListener();
+        _showBlockedScreen(null);
+        return;
+      } else {
+        // Диспутов < 3 — снять блок
+        STATE.user.tempBlocked     = false;
+        STATE.user.tempBlockedUntil = null;
+        STATE.user.tempBlockReason  = null;
+        saveState();
+        try { await dbSet('users', STATE.uid, { tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null }); } catch (_) {}
+      }
+    } else if (STATE.user.tempBlockedUntil) {
+      // Блок на 24ч — проверить не истёк ли
+      if (new Date(STATE.user.tempBlockedUntil) > new Date()) {
+        showLoading(false);
+        setupNotificationListener();
+        _showBlockedScreen(STATE.user.tempBlockedUntil);
+        return;
+      } else {
+        STATE.user.tempBlocked      = false;
+        STATE.user.tempBlockedUntil = null;
+        STATE.user.tempBlockReason  = null;
+        saveState();
+        try { await dbSet('users', STATE.uid, { tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null }); } catch (_) {}
+      }
     }
   }
 

@@ -696,10 +696,19 @@ function renderDisputes() {
   const typeLabel = { driver_late: '🚗 Водитель опоздал', no_passenger: '❓ Пассажира нет' };
   list.innerHTML = disputes.map(d => {
     const isPending = d.status === 'pending';
-    const typeStr = typeLabel[d.type] || d.type;
+    const typeStr   = typeLabel[d.type] || d.type;
+
+    // Безопасное форматирование гео
+    const fmtGeo = geo => {
+      if (!geo) return '<span style="color:var(--text3);font-style:italic">не получена</span>';
+      const lat = Number(geo.lat), lng = Number(geo.lng);
+      if (isNaN(lat) || isNaN(lng)) return '<span style="color:var(--text3);font-style:italic">некорректные данные</span>';
+      return `${lat.toFixed(5)}, ${lng.toFixed(5)} <a href="https://maps.google.com/?q=${lat},${lng}" target="_blank" style="font-size:10px;color:var(--primary)">карта ↗</a>`;
+    };
+
     return `
     <div class="table-wrap" style="margin-bottom:16px">
-      <div class="table-hdr" style="display:flex;justify-content:space-between;align-items:center">
+      <div class="table-hdr" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px">
         <div>
           <strong>${d.id}</strong>
           <span style="margin-left:8px;font-size:12px;color:var(--text3)">${typeStr}</span>
@@ -710,38 +719,57 @@ function renderDisputes() {
         </div>
       </div>
       <div style="padding:16px;display:flex;flex-direction:column;gap:10px">
+
+        <!-- Участники -->
         <div style="display:flex;gap:16px;flex-wrap:wrap">
-          <div style="flex:1;min-width:200px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">ПАССАЖИР</div>
+          <div style="flex:1;min-width:180px;background:var(--bg3);border-radius:8px;padding:10px">
+            <div style="font-size:10px;font-weight:800;color:var(--text3);margin-bottom:6px;letter-spacing:.5px">ПАССАЖИР</div>
             <div style="font-weight:700">${d.passengerName || '—'}</div>
-            <div style="font-size:12px;color:var(--text2)">${d.passengerPhone || '—'}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">
-              Побед: ${d.passengerDisputesWon || 0} / Поражений: ${d.passengerDisputesLost || 0}
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${d.passengerPhone || '—'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px">
+              ✅ побед: ${d.passengerDisputesWon || 0} &nbsp; ❌ поражений: ${d.passengerDisputesLost || 0}
             </div>
           </div>
-          <div style="flex:1;min-width:200px">
-            <div style="font-size:11px;color:var(--text3);margin-bottom:4px">ВОДИТЕЛЬ</div>
+          <div style="flex:1;min-width:180px;background:var(--bg3);border-radius:8px;padding:10px">
+            <div style="font-size:10px;font-weight:800;color:var(--text3);margin-bottom:6px;letter-spacing:.5px">ВОДИТЕЛЬ</div>
             <div style="font-weight:700">${d.driverName || '—'}</div>
-            <div style="font-size:12px;color:var(--text2)">${d.driverPhone || '—'}</div>
-            <div style="font-size:11px;color:var(--text3);margin-top:4px">
-              Побед: ${d.driverDisputesWon || 0} / Поражений: ${d.driverDisputesLost || 0}
+            <div style="font-size:12px;color:var(--text2);margin-top:2px">${d.driverPhone || '—'}</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:5px">
+              ✅ побед: ${d.driverDisputesWon || 0} &nbsp; ❌ поражений: ${d.driverDisputesLost || 0}
             </div>
           </div>
         </div>
-        <div style="font-size:13px;color:var(--text2)">
-          📍 ${d.from || '—'} → ${d.to || '—'}
+
+        <!-- Маршрут -->
+        <div style="font-size:13px;color:var(--text2)">📍 ${d.from || '—'} → ${d.to || '—'}</div>
+
+        <!-- Геолокация -->
+        <div style="display:flex;flex-direction:column;gap:4px;padding:10px;background:var(--bg3);border-radius:8px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:2px">ГЕОЛОКАЦИЯ</div>
+          <div style="font-size:12px">🚗 Водитель: ${fmtGeo(d.driverGeo)}</div>
+          <div style="font-size:12px">🧳 Пассажир: ${fmtGeo(d.passengerGeo)}</div>
         </div>
-        ${d.driverGeo ? `<div style="font-size:11px;color:var(--text3)">📌 Гео водителя: ${d.driverGeo.lat.toFixed(5)}, ${d.driverGeo.lng.toFixed(5)}</div>` : ''}
-        ${d.passengerGeo ? `<div style="font-size:11px;color:var(--text3)">📌 Гео пассажира: ${d.passengerGeo.lat.toFixed(5)}, ${d.passengerGeo.lng.toFixed(5)}</div>` : ''}
-        ${d.resolution ? `<div style="font-size:13px;color:var(--text2);margin-top:4px">Решение: <strong>${_resolutionLabel(d.resolution)}</strong></div>` : ''}
+
+        ${d.resolution ? `<div style="font-size:13px;color:var(--text2)">Решение: <strong>${_resolutionLabel(d.resolution)}</strong></div>` : ''}
+
+        <!-- Кнопки решения -->
         ${isPending ? `
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;border-top:1px solid var(--border);padding-top:12px">
-          <div style="font-size:12px;font-weight:700;color:var(--text2);width:100%;margin-bottom:4px">Решение администратора:</div>
-          <button class="btn-sm btn-danger" onclick="resolveDispute('${d.id}','passenger_guilty')">👎 Виноват пассажир</button>
-          <button class="btn-sm btn-danger" onclick="resolveDispute('${d.id}','driver_guilty')">👎 Виноват водитель</button>
-          <button class="btn-sm btn-view" onclick="resolveDispute('${d.id}','both_guilty')">⚠️ Оба виноваты</button>
-          <button class="btn-sm btn-view" onclick="resolveDispute('${d.id}','draw')">🤝 Ничья</button>
+        <div style="border-top:1px solid var(--border);padding-top:12px;margin-top:4px">
+          <div style="font-size:12px;font-weight:700;color:var(--text2);margin-bottom:8px">Решение администратора:</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-sm btn-danger" onclick="resolveDispute('${d.id}','passenger_guilty')">👎 Виноват пассажир</button>
+            <button class="btn-sm btn-danger" onclick="resolveDispute('${d.id}','driver_guilty')">👎 Виноват водитель</button>
+            <button class="btn-sm btn-view"   onclick="resolveDispute('${d.id}','both_guilty')">⚠️ Оба виноваты</button>
+            <button class="btn-sm btn-view"   onclick="resolveDispute('${d.id}','draw')">🤝 Ничья</button>
+          </div>
         </div>` : ''}
+
+        <!-- Разблок -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
+          ${d.passengerId ? `<button class="btn-sm btn-approve" onclick="adminUnblockUser('${d.passengerId}','${(d.passengerName||'пассажир').replace(/'/g,"\\'")}')">🔓 Разблок пассажира</button>` : ''}
+          ${d.driverUid   ? `<button class="btn-sm btn-approve" onclick="adminUnblockUser('${d.driverUid}','${(d.driverName||'водитель').replace(/'/g,"\\'")}')">🔓 Разблок водителя</button>` : ''}
+        </div>
+
       </div>
     </div>`;
   }).join('');
@@ -758,54 +786,56 @@ async function resolveDispute(disputeId, resolution) {
     const dispute = _allDisputes.find(d => d.id === disputeId);
     if (!dispute) { showToast('Диспут не найден', 'err'); return; }
 
-    const penalty = appSettings.passengerCancelPenalty || 0.1;
-    const dPenalty = appSettings.driverCancelPenalty || 0.05;
+    const paxPenalty = appSettings.passengerCancelPenalty || 0.1;
+    const drvPenalty = appSettings.driverCancelPenalty    || 0.05;
     const now = new Date().toISOString();
 
-    // Apply penalties and update stats
-    if (resolution === 'passenger_guilty' || resolution === 'both_guilty') {
-      await _adminApplyPenalty(dispute.passengerId, penalty, 'lost');
-    } else {
-      await _adminUpdateDisputeStats(dispute.passengerId, 'won');
-    }
-    if (resolution === 'driver_guilty' || resolution === 'both_guilty') {
-      await _adminApplyPenalty(dispute.driverUid, dPenalty, 'lost');
-    } else {
-      await _adminUpdateDisputeStats(dispute.driverUid, 'won');
-    }
+    const paxGuilty = (resolution === 'passenger_guilty' || resolution === 'both_guilty');
+    const drvGuilty = (resolution === 'driver_guilty'    || resolution === 'both_guilty');
 
-    // Mark dispute resolved
+    // Применить штрафы / засчитать победы
+    if (paxGuilty) await _adminApplyPenalty(dispute.passengerId, paxPenalty, 'lost');
+    else           await _adminApplyPenalty(dispute.passengerId, 0,          'won');
+    if (drvGuilty) await _adminApplyPenalty(dispute.driverUid,  drvPenalty,  'lost');
+    else           await _adminApplyPenalty(dispute.driverUid,  0,           'won');
+
+    // Пометить диспут решённым
     await db.collection('disputes').doc(disputeId).set({
-      status: 'resolved',
-      resolution,
-      resolvedAt: now,
+      status: 'resolved', resolution, resolvedAt: now,
     }, { merge: true });
 
-    // Notify passenger
-    await _adminSendNotification(dispute.passengerId, {
-      type: 'dispute_result',
-      message: resolution === 'passenger_guilty'
-        ? '⚠️ По диспуту принято решение: рейтинг снижен.'
-        : resolution === 'both_guilty'
-        ? '⚠️ По диспуту принято решение: обе стороны получили штраф.'
-        : '✅ По диспуту принято решение в вашу пользу.',
-      msgType: (resolution === 'passenger_guilty' || resolution === 'both_guilty') ? 'warn' : 'ok',
-    });
-
-    // Notify driver
-    await _adminSendNotification(dispute.driverUid, {
-      type: 'dispute_result',
-      message: resolution === 'driver_guilty'
-        ? '⚠️ По диспуту принято решение: рейтинг снижен.'
-        : resolution === 'both_guilty'
-        ? '⚠️ По диспуту принято решение: обе стороны получили штраф.'
-        : '✅ По диспуту принято решение в вашу пользу.',
-      msgType: (resolution === 'driver_guilty' || resolution === 'both_guilty') ? 'warn' : 'ok',
-    });
-
-    // Update local list
+    // Обновить локальный список до проверок блокировок
     const idx = _allDisputes.findIndex(d => d.id === disputeId);
     if (idx !== -1) _allDisputes[idx] = { ..._allDisputes[idx], status: 'resolved', resolution, resolvedAt: now };
+
+    // Проверить блокировку для обоих участников:
+    // 1) Если pending-диспутов стало < 3 — снять pending-блок
+    // 2) Если проиграл >= 3 сегодня — поставить 24ч блок
+    await _adminCheckBlockAfterResolve(dispute.passengerId, paxGuilty);
+    await _adminCheckBlockAfterResolve(dispute.driverUid,   drvGuilty);
+
+    // Уведомить пассажира
+    await _adminSendNotification(dispute.passengerId, {
+      type:    'dispute_result',
+      message: paxGuilty
+        ? '⚠️ Диспут решён не в вашу пользу: рейтинг снижен.'
+        : resolution === 'draw'
+        ? '🤝 Диспут завершён ничьей. Штрафов нет.'
+        : '✅ Диспут решён в вашу пользу.',
+      msgType: paxGuilty ? 'warn' : 'ok',
+    });
+
+    // Уведомить водителя
+    await _adminSendNotification(dispute.driverUid, {
+      type:    'dispute_result',
+      message: drvGuilty
+        ? '⚠️ Диспут решён не в вашу пользу: рейтинг снижен.'
+        : resolution === 'draw'
+        ? '🤝 Диспут завершён ничьей. Штрафов нет.'
+        : '✅ Диспут решён в вашу пользу.',
+      msgType: drvGuilty ? 'warn' : 'ok',
+    });
+
     renderDisputes();
     showToast('Диспут решён ✅', 'ok');
   } catch (e) {
@@ -813,29 +843,85 @@ async function resolveDispute(disputeId, resolution) {
   }
 }
 
+/**
+ * После решения диспута проверить и обновить блокировку пользователя.
+ * Снимает pending-блок если осталось < 3 открытых диспутов.
+ * Ставит 24ч блок если за сегодня >= 3 проигранных диспутов.
+ */
+async function _adminCheckBlockAfterResolve(uid, wasGuilty) {
+  if (!uid) return;
+  try {
+    const snap = await db.collection('users').doc(uid).get();
+    const user = snap.exists ? snap.data() : {};
+
+    // Подсчитать оставшиеся pending-диспуты
+    const pendingSnap = await db.collection('disputes')
+      .where('status', '==', 'pending').get();
+    const pendingCount = pendingSnap.docs.filter(d => {
+      const data = d.data();
+      return data.passengerId === uid || data.driverUid === uid;
+    }).length;
+
+    let update = {};
+
+    // Снять pending-блок если диспутов < 3
+    if (user.tempBlocked && user.tempBlockReason === 'pending_disputes' && pendingCount < 3) {
+      update.tempBlocked      = false;
+      update.tempBlockedUntil = null;
+      update.tempBlockReason  = null;
+    }
+
+    // Если виноват — проверить счётчик проигрышей за сегодня
+    if (wasGuilty) {
+      const today = new Date().toDateString();
+      const same  = user.lastDisputeLostDate === today;
+      const lostToday = (same ? (user.disputesLostToday || 0) : 0) + 1;
+      update.disputesLostToday  = lostToday;
+      update.lastDisputeLostDate = today;
+
+      if (lostToday >= 3) {
+        const until = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+        update.tempBlocked      = true;
+        update.tempBlockedUntil = until;
+        update.tempBlockReason  = 'lost_disputes_today';
+        update.tempBlockCount   = (user.tempBlockCount || 0) + 1;
+        showToast(`Пользователь ${user.name || uid} заблокирован на 24ч (3 проигранных диспута)`, 'warn');
+      }
+    }
+
+    if (Object.keys(update).length) {
+      await db.collection('users').doc(uid).set(update, { merge: true });
+    }
+  } catch (e) { console.warn('[adminCheckBlock]', e); }
+}
+
 async function _adminApplyPenalty(uid, amount, outcome) {
   if (!uid) return;
   try {
     const snap = await db.collection('users').doc(uid).get();
     const user = snap.exists ? snap.data() : {};
-    const newRating = Math.max(1.0, Math.round(((user.rating || 5.0) - amount) * 100) / 100);
-    const update = { rating: newRating };
+    const update = {};
+    if (amount > 0) {
+      update.rating = Math.max(1.0, Math.round(((user.rating || 5.0) - amount) * 100) / 100);
+    }
     if (outcome === 'lost') update.disputesLost = (user.disputesLost || 0) + 1;
-    else update.disputesWon = (user.disputesWon || 0) + 1;
+    else                    update.disputesWon  = (user.disputesWon  || 0) + 1;
     await db.collection('users').doc(uid).set(update, { merge: true });
   } catch (e) { console.warn('[adminPenalty]', e); }
 }
 
-async function _adminUpdateDisputeStats(uid, outcome) {
-  if (!uid) return;
+/** Разблокировать пользователя (снять temp-блок) из карточки диспута */
+async function adminUnblockUser(uid, name) {
+  if (!confirm(`Снять временную блокировку с пользователя ${name}?`)) return;
   try {
-    const snap = await db.collection('users').doc(uid).get();
-    const user = snap.exists ? snap.data() : {};
-    const update = outcome === 'won'
-      ? { disputesWon: (user.disputesWon || 0) + 1 }
-      : { disputesLost: (user.disputesLost || 0) + 1 };
-    await db.collection('users').doc(uid).set(update, { merge: true });
-  } catch (e) {}
+    await db.collection('users').doc(uid).set({
+      tempBlocked:      false,
+      tempBlockedUntil: null,
+      tempBlockReason:  null,
+    }, { merge: true });
+    showToast(`${name} разблокирован ✅`, 'ok');
+    loadDisputes();
+  } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
 async function _adminSendNotification(uid, data) {
