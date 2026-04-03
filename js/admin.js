@@ -22,8 +22,9 @@ const ADMIN_CREDENTIALS = {
 
 let db = null, isFirebaseReady = false;
 let currentChatId = null, unsubChat = null;
-let allDrivers = [], allOrders = [], appSettings = {};
+let allDrivers = [], allOrders = [], allPassengers = [], appSettings = {};
 let driverFilter = 'all', orderFilter = 'all';
+let _driverSearch = '', _passengerSearch = '', _orderSearch = '', _disputeSearch = '';
 
 // ============================================================
 // INIT
@@ -248,11 +249,21 @@ function filterDrivers(f) {
   renderDrivers();
 }
 
+function searchDrivers(q) { _driverSearch = q.trim().toLowerCase(); renderDrivers(); }
+
 function renderDrivers() {
   let list = allDrivers;
-  if (driverFilter === 'pending') list = list.filter(d => d.approved === false && !d.blocked);
+  if (driverFilter === 'pending')  list = list.filter(d => d.approved === false && !d.blocked);
   else if (driverFilter === 'approved') list = list.filter(d => d.approved === true && !d.blocked);
-  else if (driverFilter === 'blocked') list = list.filter(d => d.blocked === true);
+  else if (driverFilter === 'blocked')  list = list.filter(d => d.blocked === true);
+  if (_driverSearch) {
+    const q = _driverSearch;
+    list = list.filter(d =>
+      (d.name  || '').toLowerCase().includes(q) ||
+      (d.phone || '').toLowerCase().includes(q) ||
+      (d.city  || '').toLowerCase().includes(q)
+    );
+  }
   list = list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
   const tbody = document.getElementById('drivers-tbody');
@@ -261,16 +272,20 @@ function renderDrivers() {
     return;
   }
   tbody.innerHTML = list.map(d => {
+    const id = d.id || d.tgId;
+    const safeName = (d.name || '—').replace(/'/g, "\\'");
     const freeUntil = d.freeUntil ? new Date(d.freeUntil) : null;
     const isFree = freeUntil && freeUntil > new Date();
     const subBadge = isFree
       ? `<span class="badge b-green">Бесплатно до ${fmtDateShort(d.freeUntil)}</span>`
       : '<span class="badge b-orange">Нужна оплата</span>';
-    const statusBadgeHtml = d.blocked
-      ? '<span class="badge b-red">Заблокирован</span>'
+    const isBlockedDrv  = d.blocked || d.blockedAsDriver;
+    const isBlockedPax  = d.blockedAsPassenger;
+    const statusBadgeHtml = d.blocked || d.blockedAsDriver
+      ? '<span class="badge b-red">🚫 Заблокирован</span>'
       : d.approved
-        ? '<span class="badge b-green">Активен</span>'
-        : '<span class="badge b-orange">На проверке ⏳</span>';
+        ? '<span class="badge b-green">✓ Активен</span>'
+        : '<span class="badge b-orange">⏳ На проверке</span>';
     return `
       <tr>
         <td><div style="font-weight:700">${d.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${d.tgId}</div></td>
@@ -283,10 +298,13 @@ function renderDrivers() {
         <td>${subBadge}</td>
         <td style="white-space:nowrap">
           <div style="display:flex;gap:4px;flex-wrap:wrap">
-            ${!d.approved && !d.blockedAsDriver && !d.blocked ? `<button class="btn-sm btn-approve" onclick="approveDriver('${d.id || d.tgId}')">✓ Одобрить</button>` : ''}
-            ${!d.blockedAsDriver && !d.blocked ? `<button class="btn-sm btn-reject" onclick="blockDriver('${d.id || d.tgId}')">Блок вод.</button>` : `<button class="btn-sm btn-approve" onclick="unblockDriver('${d.id || d.tgId}')">↩ Разблок вод.</button>`}
-            ${!d.blockedAsPassenger ? `<button class="btn-sm btn-reject" onclick="blockDriverAsPassenger('${d.id || d.tgId}')">Блок пасс.</button>` : `<button class="btn-sm btn-approve" onclick="unblockDriverAsPassenger('${d.id || d.tgId}')">↩ Разблок пасс.</button>`}
-            <button class="btn-sm btn-view" onclick="extendFree('${d.id || d.tgId}')">+30д</button>
+            ${!d.approved && !isBlockedDrv ? `<button class="btn-sm btn-approve" onclick="approveDriver('${id}')">✓ Одобрить</button>` : ''}
+            ${d.approved && !isBlockedDrv  ? `<button class="btn-sm btn-view"    onclick="sendForReview('${id}','${safeName}')">🔄 На проверку</button>` : ''}
+            <button class="btn-sm btn-reject"  onclick="blockDriverPermanent('${id}','${safeName}')"   ${isBlockedDrv  ? 'disabled' : ''}>🚫 Блок вод.</button>
+            <button class="btn-sm btn-approve" onclick="unblockDriverPermanent('${id}','${safeName}')" ${!isBlockedDrv ? 'disabled' : ''}>✅ Разблок вод.</button>
+            <button class="btn-sm btn-reject"  onclick="blockPassengerPermanent('${id}','${safeName}')"   ${isBlockedPax  ? 'disabled' : ''}>🚫 Блок пасс.</button>
+            <button class="btn-sm btn-approve" onclick="unblockPassengerPermanent('${id}','${safeName}')" ${!isBlockedPax ? 'disabled' : ''}>✅ Разблок пасс.</button>
+            <button class="btn-sm btn-view" onclick="extendFree('${id}')">+30д</button>
           </div>
         </td>
       </tr>`;
@@ -301,33 +319,72 @@ async function approveDriver(driverId) {
     const raw = localStorage.getItem(key);
     if (raw) { const doc = JSON.parse(raw); doc.approved = true; localStorage.setItem(key, JSON.stringify(doc)); }
   } catch (e) {}
+  await _adminSendNotification(driverId, {
+    type: 'dispute_result',
+    message: '✅ Ваш водительский аккаунт одобрен. Теперь вы можете выходить на линию!',
+    msgType: 'ok',
+  });
   showToast('Водитель одобрен ✅', 'ok');
   loadDrivers();
 }
 
-async function blockDriver(driverId) {
-  if (!confirm('Заблокировать как водителя?')) return;
-  await updateDoc('users', driverId, { blockedAsDriver: true, blocked: true, approved: false });
-  showToast('Заблокирован как водитель', 'ok');
+async function sendForReview(driverId, name) {
+  if (!confirm(`Отправить ${name} на повторную проверку?`)) return;
+  await updateDoc('users', driverId, { approved: false });
+  await _adminSendNotification(driverId, {
+    type: 'dispute_result',
+    message: '⚠️ Ваши данные отправлены на повторную проверку администратором. Ожидайте подтверждения.',
+    msgType: 'warn',
+  });
+  showToast('Водитель отправлен на проверку', 'ok');
   loadDrivers();
 }
 
-async function unblockDriver(driverId) {
-  await updateDoc('users', driverId, { blockedAsDriver: false, blocked: false, approved: true });
-  showToast('Разблокирован как водитель ✅', 'ok');
+async function blockDriverPermanent(id, name) {
+  if (!confirm(`Заблокировать водителя ${name}? Блокировка постоянная до ручного разблока.`)) return;
+  await updateDoc('users', id, { blockedAsDriver: true, blocked: true, approved: false });
+  await _adminSendNotification(id, {
+    type: 'dispute_result',
+    message: '🚫 Ваш водительский аккаунт заблокирован администратором. Обратитесь в поддержку.',
+    msgType: 'warn',
+  });
+  showToast(`Водитель ${name} заблокирован`, 'ok');
   loadDrivers();
 }
 
-async function blockDriverAsPassenger(driverId) {
-  if (!confirm('Заблокировать как пассажира?')) return;
-  await updateDoc('users', driverId, { blockedAsPassenger: true });
-  showToast('Заблокирован как пассажир', 'ok');
+async function unblockDriverPermanent(id, name) {
+  if (!confirm(`Разблокировать водителя ${name}?`)) return;
+  await updateDoc('users', id, { blockedAsDriver: false, blocked: false, approved: true });
+  await _adminSendNotification(id, {
+    type: 'dispute_result',
+    message: '✅ Ваша блокировка как водителя снята администратором. Можете выходить на линию!',
+    msgType: 'ok',
+  });
+  showToast(`Водитель ${name} разблокирован ✅`, 'ok');
   loadDrivers();
 }
 
-async function unblockDriverAsPassenger(driverId) {
-  await updateDoc('users', driverId, { blockedAsPassenger: false });
-  showToast('Разблокирован как пассажир ✅', 'ok');
+async function blockPassengerPermanent(id, name) {
+  if (!confirm(`Заблокировать ${name} как пассажира? Блокировка постоянная.`)) return;
+  await updateDoc('users', id, { blockedAsPassenger: true });
+  await _adminSendNotification(id, {
+    type: 'dispute_result',
+    message: '🚫 Ваш аккаунт пассажира заблокирован администратором. Обратитесь в поддержку.',
+    msgType: 'warn',
+  });
+  showToast(`${name} заблокирован как пассажир`, 'ok');
+  loadDrivers();
+}
+
+async function unblockPassengerPermanent(id, name) {
+  if (!confirm(`Разблокировать ${name} как пассажира?`)) return;
+  await updateDoc('users', id, { blockedAsPassenger: false });
+  await _adminSendNotification(id, {
+    type: 'dispute_result',
+    message: '✅ Ваша блокировка как пассажира снята администратором.',
+    msgType: 'ok',
+  });
+  showToast(`${name} разблокирован как пассажир ✅`, 'ok');
   loadDrivers();
 }
 
@@ -344,12 +401,33 @@ async function extendFree(driverId) {
 async function loadPassengers() {
   document.getElementById('passengers-tbody').innerHTML = '<tr><td colspan="7" class="empty">⏳ Загрузка...</td></tr>';
   const users = await getAllUsers();
-  const passengers = users.filter(u => u.role === 'passenger' || (!u.role && !u.car));
+  allPassengers = users.filter(u => u.role === 'passenger' || (!u.role && !u.car));
+  renderPassengers();
+}
+
+function searchPassengers(q) { _passengerSearch = q.trim().toLowerCase(); renderPassengers(); }
+
+function renderPassengers() {
+  let list = allPassengers;
+  if (_passengerSearch) {
+    const q = _passengerSearch;
+    list = list.filter(p =>
+      (p.name  || '').toLowerCase().includes(q) ||
+      (p.phone || '').toLowerCase().includes(q) ||
+      (p.city  || '').toLowerCase().includes(q)
+    );
+  }
+  list = list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
   const tbody = document.getElementById('passengers-tbody');
-  if (!passengers.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет пассажиров</td></tr>'; return; }
-  tbody.innerHTML = passengers.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).map(p => `
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет пассажиров</td></tr>'; return; }
+  tbody.innerHTML = list.map(p => {
+    const id = p.id || p.tgId;
+    const safeName     = (p.name || '—').replace(/'/g, "\\'");
+    const isBlockedPax = p.blockedAsPassenger || p.blocked;
+    const isBlockedDrv = p.blockedAsDriver;
+    return `
     <tr>
-      <td><div style="font-weight:700">${p.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${p.tgId}</div></td>
+      <td><div style="font-weight:700">${p.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${p.tgId || ''}</div></td>
       <td>${p.phone || '—'}</td>
       <td>${p.city || '—'}</td>
       <td>⭐ ${fmtRating(p.rating)}</td>
@@ -357,31 +435,21 @@ async function loadPassengers() {
       <td style="font-size:11px;color:var(--text3)">${fmtDate(p.createdAt)}</td>
       <td>
         <div style="display:flex;gap:4px;flex-wrap:wrap">
-          ${!p.blockedAsPassenger && !p.blocked
-            ? `<button class="btn-sm btn-reject" onclick="blockUser('${p.id || p.tgId}')">Блок пасс.</button>`
-            : `<button class="btn-sm btn-approve" onclick="unblockUser('${p.id || p.tgId}')">↩ Разблок пасс.</button>`}
-          ${!p.blockedAsDriver
-            ? `<button class="btn-sm btn-reject" onclick="blockUserAsDriver('${p.id || p.tgId}')">Блок вод.</button>`
-            : `<button class="btn-sm btn-approve" onclick="unblockUserAsDriver('${p.id || p.tgId}')">↩ Разблок вод.</button>`}
+          <button class="btn-sm btn-reject"  onclick="blockPassengerPermanent('${id}','${safeName}')"   ${isBlockedPax  ? 'disabled' : ''}>🚫 Блок пасс.</button>
+          <button class="btn-sm btn-approve" onclick="unblockPassengerPermanent('${id}','${safeName}')" ${!isBlockedPax ? 'disabled' : ''}>✅ Разблок пасс.</button>
+          <button class="btn-sm btn-reject"  onclick="blockDriverPermanent('${id}','${safeName}')"   ${isBlockedDrv  ? 'disabled' : ''}>🚫 Блок вод.</button>
+          <button class="btn-sm btn-approve" onclick="unblockDriverPermanent('${id}','${safeName}')" ${!isBlockedDrv ? 'disabled' : ''}>✅ Разблок вод.</button>
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
-async function blockUser(id) {
-  if (!confirm('Заблокировать как пассажира?')) return;
-  await updateDoc('users', id, { blockedAsPassenger: true, blocked: true }); showToast('Заблокирован как пассажир', 'ok'); loadPassengers();
-}
-async function unblockUser(id) {
-  await updateDoc('users', id, { blockedAsPassenger: false, blocked: false }); showToast('Разблокирован ✅', 'ok'); loadPassengers();
-}
-async function blockUserAsDriver(id) {
-  if (!confirm('Заблокировать как водителя?')) return;
-  await updateDoc('users', id, { blockedAsDriver: true, approved: false }); showToast('Заблокирован как водитель', 'ok'); loadPassengers();
-}
-async function unblockUserAsDriver(id) {
-  await updateDoc('users', id, { blockedAsDriver: false }); showToast('Разблокирован как водитель ✅', 'ok'); loadPassengers();
-}
+// Старые функции-обёртки (оставляем для обратной совместимости)
+async function blockUser(id)            { await blockPassengerPermanent(id, id); }
+async function unblockUser(id)          { await unblockPassengerPermanent(id, id); }
+async function blockUserAsDriver(id)    { await blockDriverPermanent(id, id); }
+async function unblockUserAsDriver(id)  { await unblockDriverPermanent(id, id); }
 
 // ============================================================
 // ORDERS
@@ -399,9 +467,21 @@ function filterOrders(f) {
   renderOrders();
 }
 
+function searchOrders(q) { _orderSearch = q.trim().toLowerCase(); renderOrders(); }
+
 function renderOrders() {
   let list = allOrders.filter(o => o.type !== 'intercity');
   if (orderFilter !== 'all') list = list.filter(o => o.status === orderFilter);
+  if (_orderSearch) {
+    const q = _orderSearch;
+    list = list.filter(o =>
+      (o.passengerPhone || '').toLowerCase().includes(q) ||
+      (o.passengerName  || '').toLowerCase().includes(q) ||
+      (o.acceptedDriver?.name  || '').toLowerCase().includes(q) ||
+      (o.acceptedDriver?.phone || '').toLowerCase().includes(q) ||
+      (o.id || '').toLowerCase().includes(q)
+    );
+  }
   list = list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const tbody = document.getElementById('orders-tbody');
   if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">Нет заказов</td></tr>'; return; }
@@ -414,8 +494,11 @@ function renderOrders() {
       <td style="font-weight:700;color:var(--y)">${fmtPrice(o.acceptedPrice || o.price)}₸</td>
       <td><span class="badge ${o.payMethod === 'cash' ? 'b-blue' : 'b-green'}">${o.payMethod === 'cash' ? '💵 Нал' : '📲 Перевод'}</span></td>
       <td>${statusBadge(o.status)}</td>
-      <td style="font-size:12px">${o.acceptedDriver ? o.acceptedDriver.name : '—'}</td>
-      <td style="color:var(--text3);font-size:11px">${fmtDate(o.createdAt)}</td>
+      <td style="font-size:12px">${o.acceptedDriver ? `<div>${o.acceptedDriver.name}</div><div style="font-size:10px;color:var(--text3)">${o.acceptedDriver.phone || ''}</div>` : '—'}</td>
+      <td style="color:var(--text3);font-size:11px;white-space:nowrap">
+        <div>${fmtDate(o.createdAt)}</div>
+        <div style="color:var(--text2)">${fmtTime(o.createdAt)}</div>
+      </td>
     </tr>`).join('');
 }
 
@@ -676,17 +759,25 @@ async function loadDisputes() {
   }
 }
 
-function filterDisputes(filter) {
-  _disputeFilter = filter;
-  renderDisputes();
-}
+function filterDisputes(filter) { _disputeFilter = filter; renderDisputes(); }
+function searchDisputes(q) { _disputeSearch = q.trim().toLowerCase(); renderDisputes(); }
 
 function renderDisputes() {
   const list = document.getElementById('disputes-list');
   if (!list) return;
   let disputes = _allDisputes;
-  if (_disputeFilter === 'pending') disputes = disputes.filter(d => d.status === 'pending');
+  if (_disputeFilter === 'pending')  disputes = disputes.filter(d => d.status === 'pending');
   else if (_disputeFilter === 'resolved') disputes = disputes.filter(d => d.status !== 'pending');
+  if (_disputeSearch) {
+    const q = _disputeSearch;
+    disputes = disputes.filter(d =>
+      (d.id             || '').toLowerCase().includes(q) ||
+      (d.passengerPhone || '').toLowerCase().includes(q) ||
+      (d.driverPhone    || '').toLowerCase().includes(q) ||
+      (d.passengerName  || '').toLowerCase().includes(q) ||
+      (d.driverName     || '').toLowerCase().includes(q)
+    );
+  }
 
   if (!disputes.length) {
     list.innerHTML = '<div class="empty-state" style="padding:32px;text-align:center;color:var(--text3)">Нет диспутов</div>';
@@ -764,10 +855,19 @@ function renderDisputes() {
           </div>
         </div>` : ''}
 
-        <!-- Разблок -->
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:2px">
-          ${d.passengerId ? `<button class="btn-sm btn-approve" onclick="adminUnblockUser('${d.passengerId}','${(d.passengerName||'пассажир').replace(/'/g,"\\'")}')">🔓 Разблок пассажира</button>` : ''}
-          ${d.driverUid   ? `<button class="btn-sm btn-approve" onclick="adminUnblockUser('${d.driverUid}','${(d.driverName||'водитель').replace(/'/g,"\\'")}')">🔓 Разблок водителя</button>` : ''}
+        <!-- Блок / Разблок из диспута -->
+        <div style="border-top:1px solid var(--border);padding-top:10px;margin-top:4px">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);margin-bottom:6px">УПРАВЛЕНИЕ ДОСТУПОМ</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            ${d.passengerId ? `
+              <button class="btn-sm btn-reject"  onclick="adminBlockUser('${d.passengerId}','${(d.passengerName||'пассажир').replace(/'/g,"\\'")}')">🚫 Блок пасс.</button>
+              <button class="btn-sm btn-approve" onclick="adminUnblockUser('${d.passengerId}','${(d.passengerName||'пассажир').replace(/'/g,"\\'")}')">✅ Разблок пасс.</button>
+            ` : ''}
+            ${d.driverUid ? `
+              <button class="btn-sm btn-reject"  onclick="adminBlockUser('${d.driverUid}','${(d.driverName||'водитель').replace(/'/g,"\\'")}')">🚫 Блок вод.</button>
+              <button class="btn-sm btn-approve" onclick="adminUnblockUser('${d.driverUid}','${(d.driverName||'водитель').replace(/'/g,"\\'")}')">✅ Разблок вод.</button>
+            ` : ''}
+          </div>
         </div>
 
       </div>
@@ -910,15 +1010,37 @@ async function _adminApplyPenalty(uid, amount, outcome) {
   } catch (e) { console.warn('[adminPenalty]', e); }
 }
 
-/** Разблокировать пользователя (снять temp-блок) из карточки диспута */
-async function adminUnblockUser(uid, name) {
-  if (!confirm(`Снять временную блокировку с пользователя ${name}?`)) return;
+/** Заблокировать пользователя (постоянно) из карточки диспута */
+async function adminBlockUser(uid, name) {
+  if (!confirm(`Заблокировать ${name}? Блокировка постоянная, до ручного разблока.`)) return;
   try {
     await db.collection('users').doc(uid).set({
-      tempBlocked:      false,
-      tempBlockedUntil: null,
-      tempBlockReason:  null,
+      blocked: true, blockedAsPassenger: true,
+      tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
     }, { merge: true });
+    await _adminSendNotification(uid, {
+      type: 'dispute_result',
+      message: '🚫 Ваш аккаунт заблокирован администратором по итогам диспута. Обратитесь в поддержку.',
+      msgType: 'warn',
+    });
+    showToast(`${name} заблокирован`, 'ok');
+    loadDisputes();
+  } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
+}
+
+/** Разблокировать пользователя (снять блок) из карточки диспута */
+async function adminUnblockUser(uid, name) {
+  if (!confirm(`Разблокировать ${name}?`)) return;
+  try {
+    await db.collection('users').doc(uid).set({
+      blocked: false, blockedAsPassenger: false, blockedAsDriver: false,
+      tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
+    }, { merge: true });
+    await _adminSendNotification(uid, {
+      type: 'dispute_result',
+      message: '✅ Ваша блокировка снята администратором. Добро пожаловать обратно!',
+      msgType: 'ok',
+    });
     showToast(`${name} разблокирован ✅`, 'ok');
     loadDisputes();
   } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }

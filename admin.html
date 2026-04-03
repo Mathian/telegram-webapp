@@ -100,6 +100,9 @@
         <div class="filter-chip" onclick="filterDrivers('blocked')" id="df-blocked">✗ Заблокированы</div>
         <button class="btn-sm btn-view" onclick="loadDrivers()">🔄 Обновить</button>
       </div>
+      <div style="margin-bottom:12px">
+        <input class="inp" type="search" placeholder="🔍 Поиск по имени, телефону, городу..." oninput="searchDrivers(this.value)" style="max-width:380px;margin-bottom:0">
+      </div>
       <div class="table-wrap">
         <div class="table-scroll">
           <table>
@@ -116,8 +119,9 @@
         <h1>Пассажиры</h1>
         <p>Список зарегистрированных пользователей</p>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         <button class="btn-sm btn-view" onclick="loadPassengers()">🔄 Обновить</button>
+        <input class="inp" type="search" placeholder="🔍 Поиск по имени, телефону, городу..." oninput="searchPassengers(this.value)" style="flex:1;min-width:200px;max-width:380px;margin-bottom:0">
       </div>
       <div class="table-wrap">
         <div class="table-scroll">
@@ -143,10 +147,13 @@
         <div class="filter-chip" onclick="filterOrders('cancelled')" id="of-cancelled">✗ Отменены</div>
         <button class="btn-sm btn-view" onclick="loadOrders()">🔄 Обновить</button>
       </div>
+      <div style="margin-bottom:12px">
+        <input class="inp" type="search" placeholder="🔍 Поиск по телефону пассажира, водителя, имени или ID заказа..." oninput="searchOrders(this.value)" style="max-width:440px;margin-bottom:0">
+      </div>
       <div class="table-wrap">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>ID</th><th>Пассажир</th><th>Откуда</th><th>Куда</th><th>Цена</th><th>Тип оплаты</th><th>Статус</th><th>Водитель</th><th>Дата</th></tr></thead>
+            <thead><tr><th>ID</th><th>Пассажир</th><th>Откуда</th><th>Куда</th><th>Цена</th><th>Тип оплаты</th><th>Статус</th><th>Водитель</th><th>Дата и время</th></tr></thead>
             <tbody id="orders-tbody"><tr><td colspan="9" class="empty">Загрузка...</td></tr></tbody>
           </table>
         </div>
@@ -200,11 +207,14 @@
         <h1>Диспуты</h1>
         <p>Спорные ситуации между пассажирами и водителями</p>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center">
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
         <button class="btn-sm btn-primary" onclick="filterDisputes('pending')">⏳ Ожидают решения</button>
         <button class="btn-sm btn-view" onclick="filterDisputes('all')">Все</button>
         <button class="btn-sm btn-view" onclick="filterDisputes('resolved')">✓ Решённые</button>
         <button class="btn-sm btn-view" style="margin-left:auto" onclick="loadDisputes()">🔄 Обновить</button>
+      </div>
+      <div style="margin-bottom:16px">
+        <input class="inp" type="search" placeholder="🔍 Поиск по номеру диспута, телефону или имени участника..." oninput="searchDisputes(this.value)" style="max-width:440px;margin-bottom:0">
       </div>
       <div id="disputes-list">
         <div class="empty-state" style="padding:32px;text-align:center;color:var(--text3)">Загрузка...</div>

@@ -78,6 +78,7 @@ tr:hover td{background:var(--bg3)}
 .btn-primary:hover{background:#d4a900}
 .btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)}
 .btn-danger:hover{background:var(--red);color:#fff}
+.btn-sm:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
 
 /* Chat */
 .chat-layout{display:grid;grid-template-columns:260px 1fr;gap:0;height:calc(100vh - 140px);background:var(--card);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
