@@ -320,11 +320,6 @@ async function approveDriver(driverId) {
     const raw = localStorage.getItem(key);
     if (raw) { const doc = JSON.parse(raw); doc.approved = true; localStorage.setItem(key, JSON.stringify(doc)); }
   } catch (e) {}
-  await _adminSendNotification(driverId, {
-    type: 'dispute_result',
-    message: '✅ Ваш водительский аккаунт одобрен. Теперь вы можете выходить на линию!',
-    msgType: 'ok',
-  });
   showToast('Водитель одобрен ✅', 'ok');
   loadDrivers();
 }
@@ -332,11 +327,6 @@ async function approveDriver(driverId) {
 async function sendForReview(driverId, name) {
   if (!confirm(`Отправить ${name} на повторную проверку?`)) return;
   await updateDoc('users', driverId, { approved: false });
-  await _adminSendNotification(driverId, {
-    type: 'dispute_result',
-    message: '⚠️ Ваши данные отправлены на повторную проверку администратором. Ожидайте подтверждения.',
-    msgType: 'warn',
-  });
   showToast('Водитель отправлен на проверку', 'ok');
   loadDrivers();
 }
@@ -345,7 +335,7 @@ async function blockDriverPermanent(id, name) {
   if (!confirm(`Заблокировать водителя ${name}? Блокировка постоянная до ручного разблока.`)) return;
   try {
     await updateDoc('users', id, {
-      blockedAsDriver: true, blocked: true, approved: false,
+      blockedAsDriver: true,
       tempBlocked: true, tempBlockedUntil: null, tempBlockReason: 'admin',
     });
     showToast(`Водитель ${name} заблокирован`, 'ok');
@@ -359,11 +349,6 @@ async function unblockDriverPermanent(id, name) {
     await updateDoc('users', id, {
       blockedAsDriver: false, blocked: false, approved: true,
       tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
-    });
-    await _adminSendNotification(id, {
-      type: 'dispute_result',
-      message: '✅ Ваша блокировка как водителя снята администратором. Можете выходить на линию!',
-      msgType: 'ok',
     });
     showToast(`Водитель ${name} разблокирован ✅`, 'ok');
     loadDrivers();
@@ -386,13 +371,8 @@ async function unblockPassengerPermanent(id, name) {
   if (!confirm(`Разблокировать ${name} как пассажира?`)) return;
   try {
     await updateDoc('users', id, {
-      blockedAsPassenger: false,
+      blockedAsPassenger: false, blocked: false,
       tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
-    });
-    await _adminSendNotification(id, {
-      type: 'dispute_result',
-      message: '✅ Ваша блокировка как пассажира снята администратором. Добро пожаловать обратно!',
-      msgType: 'ok',
     });
     showToast(`${name} разблокирован как пассажир ✅`, 'ok');
     loadPassengers();

@@ -34,11 +34,12 @@ function setupPassengerListeners() {
       STATE.user = { ...STATE.user, ...freshUser };
       saveState();
       _prevBlockedState.tempBlocked = !!freshUser.tempBlocked;
-      // Real-time admin/dispute tempBlock — show fullscreen block screen
-      if (freshUser.tempBlocked && !wasTempBlocked) {
-        if (typeof _showBlockedScreen === 'function') {
-          _showBlockedScreen(freshUser.tempBlockedUntil || null);
+      if (freshUser.tempBlocked) {
+        // Newly blocked — show blocked screen
+        if (!wasTempBlocked) {
+          if (typeof _showBlockedScreen === 'function') _showBlockedScreen(freshUser.tempBlockedUntil || null);
         }
+        // Always return — no further UI updates while blocked
         return;
       }
       // Block was lifted — reinitialize
@@ -50,9 +51,6 @@ function setupPassengerListeners() {
       if (freshUser.approved === true && !wasApproved) {
         showToast('Ваш водительский аккаунт одобрен! 🟢', 'ok');
         tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
-      }
-      if (freshUser.blocked === true && !freshUser._notifiedBlocked) {
-        showToast('Ваш аккаунт заблокирован', 'err');
       }
     });
   }

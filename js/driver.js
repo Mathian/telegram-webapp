@@ -44,12 +44,13 @@ function setupDriverListeners() {
       STATE.user = { ...STATE.user, ...freshUser };
       saveState();
       _prevBlockedStateDrv.tempBlocked = !!freshUser.tempBlocked;
-      // Real-time admin/dispute tempBlock — end shift and show fullscreen block screen
-      if (freshUser.tempBlocked && !wasTempBlocked) {
-        if (typeof endShift === 'function') { try { endShift().catch(() => {}); } catch (_) {} }
-        if (typeof _showBlockedScreen === 'function') {
-          _showBlockedScreen(freshUser.tempBlockedUntil || null);
+      if (freshUser.tempBlocked) {
+        // Newly blocked — end shift and show blocked screen
+        if (!wasTempBlocked) {
+          if (typeof endShift === 'function') { try { endShift().catch(() => {}); } catch (_) {} }
+          if (typeof _showBlockedScreen === 'function') _showBlockedScreen(freshUser.tempBlockedUntil || null);
         }
+        // Always return — never call updateDriverUI while blocked
         return;
       }
       // Block was lifted — reinitialize
@@ -63,10 +64,6 @@ function setupDriverListeners() {
       if (!wasApproved && freshUser.approved === true) {
         showToast('Ваш аккаунт одобрен! Можно выходить на линию 🟢', 'ok');
         tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
-      }
-      // Notify if blocked
-      if (freshUser.blocked === true && !wasTempBlocked) {
-        showToast('Ваш аккаунт заблокирован', 'err');
       }
     });
   }
