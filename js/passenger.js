@@ -26,12 +26,28 @@ function setupPassengerListeners() {
 
   // Listen for driver approval / block changes even while in passenger mode
   if (STATE.uid) {
+    const _prevBlockedState = { tempBlocked: STATE.user?.tempBlocked || false };
     onDocSnapshot('users', STATE.uid, freshUser => {
       if (!freshUser) return;
-      const wasApproved = STATE.user.approved;
+      const wasApproved   = STATE.user.approved;
+      const wasTempBlocked = _prevBlockedState.tempBlocked;
       STATE.user = { ...STATE.user, ...freshUser };
       saveState();
-      if (!wasApproved && freshUser.approved === true) {
+      _prevBlockedState.tempBlocked = !!freshUser.tempBlocked;
+      // Real-time admin/dispute tempBlock — show fullscreen block screen
+      if (freshUser.tempBlocked && !wasTempBlocked) {
+        if (typeof _showBlockedScreen === 'function') {
+          _showBlockedScreen(freshUser.tempBlockedUntil || null);
+        }
+        return;
+      }
+      // Block was lifted — reinitialize
+      if (wasTempBlocked && !freshUser.tempBlocked) {
+        showToast('Ваш доступ восстановлен ✅', 'ok');
+        if (typeof initMain === 'function') initMain();
+        return;
+      }
+      if (freshUser.approved === true && !wasApproved) {
         showToast('Ваш водительский аккаунт одобрен! 🟢', 'ok');
         tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
       }

@@ -36,11 +36,28 @@ function setupDriverListeners() {
   }
   // Listen for approval status changes in real-time
   if (STATE.uid) {
+    const _prevBlockedStateDrv = { tempBlocked: STATE.user?.tempBlocked || false };
     onDocSnapshot('users', STATE.uid, freshUser => {
       if (!freshUser) return;
-      const wasApproved = STATE.user.approved;
+      const wasApproved    = STATE.user.approved;
+      const wasTempBlocked = _prevBlockedStateDrv.tempBlocked;
       STATE.user = { ...STATE.user, ...freshUser };
       saveState();
+      _prevBlockedStateDrv.tempBlocked = !!freshUser.tempBlocked;
+      // Real-time admin/dispute tempBlock — end shift and show fullscreen block screen
+      if (freshUser.tempBlocked && !wasTempBlocked) {
+        if (typeof endShift === 'function') { try { endShift().catch(() => {}); } catch (_) {} }
+        if (typeof _showBlockedScreen === 'function') {
+          _showBlockedScreen(freshUser.tempBlockedUntil || null);
+        }
+        return;
+      }
+      // Block was lifted — reinitialize
+      if (wasTempBlocked && !freshUser.tempBlocked) {
+        showToast('Ваш доступ восстановлен ✅', 'ok');
+        if (typeof initMain === 'function') initMain();
+        return;
+      }
       updateDriverUI();
       // Notify driver when approved
       if (!wasApproved && freshUser.approved === true) {
@@ -48,7 +65,7 @@ function setupDriverListeners() {
         tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('success');
       }
       // Notify if blocked
-      if (!wasApproved !== true && freshUser.blocked === true) {
+      if (freshUser.blocked === true && !wasTempBlocked) {
         showToast('Ваш аккаунт заблокирован', 'err');
       }
     });

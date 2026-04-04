@@ -111,7 +111,13 @@ async function initMain() {
   if (STATE.user && STATE.user.tempBlocked) {
     const reason = STATE.user.tempBlockReason;
 
-    if (reason === 'pending_disputes') {
+    if (reason === 'admin') {
+      // Постоянная блокировка администратором — не снимается автоматически
+      showLoading(false);
+      setupNotificationListener();
+      _showBlockedScreen(null);
+      return;
+    } else if (reason === 'pending_disputes') {
       // Блок до решения диспутов — проверить актуальное количество
       const pendingCount = await _countPendingDisputes(STATE.uid).catch(() => 99);
       if (pendingCount >= 3) {

@@ -113,8 +113,15 @@ async function checkDisputePendingBlock(uid, role) {
  */
 function _showBlockedScreen(until) {
   const reason = STATE.user?.tempBlockReason;
-  let text = '';
-  if (reason === 'pending_disputes') {
+  let title = 'Временная блокировка';
+  let desc  = 'Из-за большого числа отмен или диспутов доступ временно ограничен.';
+  let text  = '';
+
+  if (reason === 'admin') {
+    title = 'Аккаунт заблокирован';
+    desc  = 'Ваш аккаунт заблокирован администратором. Обратитесь в поддержку для разблокировки.';
+    text  = '';
+  } else if (reason === 'pending_disputes') {
     text = 'У вас 3 и более открытых диспута. Доступ будет восстановлен после их рассмотрения администратором.';
   } else if (until) {
     const dateStr = new Date(until).toLocaleString('ru-RU', {
@@ -122,6 +129,9 @@ function _showBlockedScreen(until) {
     });
     text = `до ${dateStr}`;
   }
+
+  _setText('s-blocked-title', title);
+  _setText('s-blocked-desc',  desc);
   _setText('s-blocked-until', text);
   showScreen('s-blocked');
 }
@@ -338,18 +348,20 @@ function showDisputeResultModal(notif) {
 
 function closeDisputeResult() {
   closeModal('mo-dispute-result');
-  // Если пользователь был заблокирован по pending-диспутам — проверить, не снят ли блок
-  if (STATE.user && STATE.user.tempBlocked && STATE.user.tempBlockReason === 'pending_disputes') {
-    dbGet('users', STATE.uid).then(fresh => {
-      if (!fresh) return;
-      STATE.user = { ...STATE.user, ...fresh };
-      saveState();
-      if (!fresh.tempBlocked) {
-        showToast('Ваш доступ восстановлен ✅', 'ok');
-        initMain();
-      }
-    }).catch(() => {});
-  }
+  // Refresh user to determine next state after notification acknowledged
+  dbGet('users', STATE.uid).then(fresh => {
+    if (!fresh) return;
+    STATE.user = { ...STATE.user, ...fresh };
+    saveState();
+    if (fresh.tempBlocked) {
+      // Still blocked — show blocked screen
+      _showBlockedScreen(fresh.tempBlockedUntil || null);
+    } else if (!fresh.tempBlocked && document.getElementById('s-blocked')?.classList.contains('active')) {
+      // Was on blocked screen and now unblocked — reinit
+      showToast('Ваш доступ восстановлен ✅', 'ok');
+      initMain();
+    }
+  }).catch(() => {});
 }
 
 // ===========================================================

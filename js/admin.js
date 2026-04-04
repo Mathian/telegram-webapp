@@ -279,9 +279,10 @@ function renderDrivers() {
     const subBadge = isFree
       ? `<span class="badge b-green">Бесплатно до ${fmtDateShort(d.freeUntil)}</span>`
       : '<span class="badge b-orange">Нужна оплата</span>';
-    const isBlockedDrv  = d.blocked || d.blockedAsDriver;
-    const isBlockedPax  = d.blockedAsPassenger;
-    const statusBadgeHtml = d.blocked || d.blockedAsDriver
+    const isAdminBlocked = d.tempBlocked && d.tempBlockReason === 'admin';
+    const isBlockedDrv  = d.blocked || d.blockedAsDriver || isAdminBlocked;
+    const isBlockedPax  = d.blockedAsPassenger || isAdminBlocked;
+    const statusBadgeHtml = d.blocked || d.blockedAsDriver || isAdminBlocked
       ? '<span class="badge b-red">🚫 Заблокирован</span>'
       : d.approved
         ? '<span class="badge b-green">✓ Активен</span>'
@@ -342,50 +343,60 @@ async function sendForReview(driverId, name) {
 
 async function blockDriverPermanent(id, name) {
   if (!confirm(`Заблокировать водителя ${name}? Блокировка постоянная до ручного разблока.`)) return;
-  await updateDoc('users', id, { blockedAsDriver: true, blocked: true, approved: false });
-  await _adminSendNotification(id, {
-    type: 'dispute_result',
-    message: '🚫 Ваш водительский аккаунт заблокирован администратором. Обратитесь в поддержку.',
-    msgType: 'warn',
-  });
-  showToast(`Водитель ${name} заблокирован`, 'ok');
-  loadDrivers();
+  try {
+    await updateDoc('users', id, {
+      blockedAsDriver: true, blocked: true, approved: false,
+      tempBlocked: true, tempBlockedUntil: null, tempBlockReason: 'admin',
+    });
+    showToast(`Водитель ${name} заблокирован`, 'ok');
+    loadDrivers();
+  } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
 async function unblockDriverPermanent(id, name) {
   if (!confirm(`Разблокировать водителя ${name}?`)) return;
-  await updateDoc('users', id, { blockedAsDriver: false, blocked: false, approved: true });
-  await _adminSendNotification(id, {
-    type: 'dispute_result',
-    message: '✅ Ваша блокировка как водителя снята администратором. Можете выходить на линию!',
-    msgType: 'ok',
-  });
-  showToast(`Водитель ${name} разблокирован ✅`, 'ok');
-  loadDrivers();
+  try {
+    await updateDoc('users', id, {
+      blockedAsDriver: false, blocked: false, approved: true,
+      tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
+    });
+    await _adminSendNotification(id, {
+      type: 'dispute_result',
+      message: '✅ Ваша блокировка как водителя снята администратором. Можете выходить на линию!',
+      msgType: 'ok',
+    });
+    showToast(`Водитель ${name} разблокирован ✅`, 'ok');
+    loadDrivers();
+  } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
 async function blockPassengerPermanent(id, name) {
   if (!confirm(`Заблокировать ${name} как пассажира? Блокировка постоянная.`)) return;
-  await updateDoc('users', id, { blockedAsPassenger: true });
-  await _adminSendNotification(id, {
-    type: 'dispute_result',
-    message: '🚫 Ваш аккаунт пассажира заблокирован администратором. Обратитесь в поддержку.',
-    msgType: 'warn',
-  });
-  showToast(`${name} заблокирован как пассажир`, 'ok');
-  loadDrivers();
+  try {
+    await updateDoc('users', id, {
+      blockedAsPassenger: true,
+      tempBlocked: true, tempBlockedUntil: null, tempBlockReason: 'admin',
+    });
+    showToast(`${name} заблокирован как пассажир`, 'ok');
+    loadPassengers();
+  } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
 async function unblockPassengerPermanent(id, name) {
   if (!confirm(`Разблокировать ${name} как пассажира?`)) return;
-  await updateDoc('users', id, { blockedAsPassenger: false });
-  await _adminSendNotification(id, {
-    type: 'dispute_result',
-    message: '✅ Ваша блокировка как пассажира снята администратором.',
-    msgType: 'ok',
-  });
-  showToast(`${name} разблокирован как пассажир ✅`, 'ok');
-  loadDrivers();
+  try {
+    await updateDoc('users', id, {
+      blockedAsPassenger: false,
+      tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
+    });
+    await _adminSendNotification(id, {
+      type: 'dispute_result',
+      message: '✅ Ваша блокировка как пассажира снята администратором. Добро пожаловать обратно!',
+      msgType: 'ok',
+    });
+    showToast(`${name} разблокирован как пассажир ✅`, 'ok');
+    loadPassengers();
+  } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
 async function extendFree(driverId) {
@@ -423,8 +434,9 @@ function renderPassengers() {
   tbody.innerHTML = list.map(p => {
     const id = p.id || p.tgId;
     const safeName     = (p.name || '—').replace(/'/g, "\\'");
-    const isBlockedPax = p.blockedAsPassenger || p.blocked;
-    const isBlockedDrv = p.blockedAsDriver;
+    const isAdminBlockedP = p.tempBlocked && p.tempBlockReason === 'admin';
+    const isBlockedPax = p.blockedAsPassenger || p.blocked || isAdminBlockedP;
+    const isBlockedDrv = p.blockedAsDriver || isAdminBlockedP;
     return `
     <tr>
       <td><div style="font-weight:700">${p.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${p.tgId || ''}</div></td>
@@ -1016,13 +1028,8 @@ async function adminBlockUser(uid, name) {
   try {
     await db.collection('users').doc(uid).set({
       blocked: true, blockedAsPassenger: true,
-      tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
+      tempBlocked: true, tempBlockedUntil: null, tempBlockReason: 'admin',
     }, { merge: true });
-    await _adminSendNotification(uid, {
-      type: 'dispute_result',
-      message: '🚫 Ваш аккаунт заблокирован администратором по итогам диспута. Обратитесь в поддержку.',
-      msgType: 'warn',
-    });
     showToast(`${name} заблокирован`, 'ok');
     loadDisputes();
   } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }

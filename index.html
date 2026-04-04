@@ -782,12 +782,10 @@
 <div class="screen" id="s-blocked">
   <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:32px;text-align:center;gap:14px">
     <div style="font-size:64px">🚫</div>
-    <div style="font-size:22px;font-weight:800;color:var(--err)">Временная блокировка</div>
-    <div style="font-size:14px;color:var(--text2);line-height:1.6;max-width:300px">
-      Из-за большого числа отмен или диспутов доступ временно ограничен.
-    </div>
+    <div style="font-size:22px;font-weight:800;color:var(--err)" id="s-blocked-title">Временная блокировка</div>
+    <div style="font-size:14px;color:var(--text2);line-height:1.6;max-width:300px" id="s-blocked-desc">Из-за большого числа отмен или диспутов доступ временно ограничен.</div>
     <div style="font-size:13px;font-weight:700;color:var(--text3)" id="s-blocked-until"></div>
-    <div style="font-size:12px;color:var(--text3);margin-top:4px">Напишите в поддержку для досрочной разблокировки.</div>
+    <div style="font-size:12px;color:var(--text3);margin-top:4px">Свяжитесь с поддержкой для разблокировки.</div>
     <button class="btn btn-out" style="margin-top:8px" onclick="openSupportChat()">💬 Написать в поддержку</button>
   </div>
 </div>
