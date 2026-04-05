@@ -63,7 +63,25 @@ function playBeep() {
     gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.45);
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.45);
-    // Auto-close context to avoid memory leak
     setTimeout(() => { try { ctx.close(); } catch (e) {} }, 1000);
+  } catch (e) {}
+}
+
+// ---- New order sound (single chime for driver) ----
+function playNewOrderBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [660, 880, 1100].forEach((freq, i) => {
+      const osc  = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.frequency.value = freq;
+      osc.type = 'sine';
+      const t = ctx.currentTime + i * 0.12;
+      gain.gain.setValueAtTime(0.3, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      osc.start(t); osc.stop(t + 0.25);
+    });
+    setTimeout(() => { try { ctx.close(); } catch (e) {} }, 1500);
   } catch (e) {}
 }

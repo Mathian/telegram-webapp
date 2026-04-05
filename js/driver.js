@@ -14,6 +14,14 @@ const _pendingOfferData = {};      // orderId -> {offerTime, price}
 let _driverOfferCountdown = null;  // interval for countdown bars
 let _lastKnownOrders = [];         // latest orders from snapshot — for forced re-renders
 let _lastKnownMode = 'city';
+const _seenOrderIds = new Set();   // track orders we've already notified about
+
+// ---- Update driver activity timestamp (resets inactivity timer) ----
+function _updateDriverActivity() {
+  if (STATE.uid && STATE.shiftActive) {
+    dbSet('users', STATE.uid, { driverLastActivity: new Date().toISOString() }).catch(() => {});
+  }
+}
 
 // ---- Init ----
 function setupDriverListeners() {
@@ -57,6 +65,20 @@ function setupDriverListeners() {
       if (wasTempBlocked && !freshUser.tempBlocked) {
         showToast('Ваш доступ восстановлен ✅', 'ok');
         if (typeof initMain === 'function') initMain();
+        return;
+      }
+      // Remote shift end by bot (inactivity) — shiftActive set to false in Firestore
+      if (STATE.shiftActive && freshUser.shiftActive === false) {
+        showToast('⏰ Смена завершена автоматически из-за неактивности', 'warn');
+        tg.HapticFeedback && tg.HapticFeedback.notificationOccurred('warning');
+        STATE.shiftActive = false;
+        STATE.user.shiftActive = false;
+        saveState();
+        clearTimeout(_shiftTimer); _shiftTimer = null;
+        stopListeningOrders();
+        _show('d-offline-box', true);
+        _show('d-online-box', false);
+        updateDriverUI();
         return;
       }
       updateDriverUI();
@@ -263,6 +285,12 @@ function renderDriverOrders(orders, mode) {
         card.style.opacity = '1';
         card.style.transform = 'none';
       });
+      // Sound + activity on genuinely new order
+      if (!_seenOrderIds.has(o.id)) {
+        _seenOrderIds.add(o.id);
+        if (typeof playNewOrderBeep === 'function') playNewOrderBeep();
+        _updateDriverActivity();
+      }
     } else {
       // Existing card — rebuild bottom section if pending state changed
       const wasShowingPending = !!existingCards[o.id].querySelector('.offer-progress-wrap');
@@ -385,6 +413,7 @@ async function submitOffer() {
   const orderId = STATE.currentOfferOrderId;
   const newOffers = [...(order.offers || []).filter(o => o.driverId !== STATE.uid), offer];
   await dbSet('orders', orderId, { offers: newOffers });
+  _updateDriverActivity();
   // Store pending offer data for countdown display
   _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
   watchPendingOffer(orderId);
@@ -477,6 +506,7 @@ async function drvAcceptOrder(orderId, price) {
   };
   const newOffers = [...(order.offers || []), offer];
   await dbSet('orders', orderId, { offers: newOffers });
+  _updateDriverActivity();
   // Store pending offer data for countdown display
   _pendingOfferData[orderId] = { offerTime: offer.offerTime, price };
   watchPendingOffer(orderId);
@@ -590,6 +620,7 @@ async function finishRide() {
 
   STATE.driverActiveOrderId = null;
   saveState();
+  _updateDriverActivity(); // Reset inactivity timer after completing a trip
 
   if (_unsubDriverOrders) { _unsubDriverOrders(); _unsubDriverOrders = null; }
   _show('d-active-order', false);
@@ -707,15 +738,22 @@ async function goOnline() {
   STATE.shiftTrips = 0;
   saveState();
 
+  const myTgId = String(tg.initDataUnsafe?.user?.id || '');
   await dbSet('driver_shifts', STATE.uid + '_shift', {
     driverId: STATE.uid,
     driverName: STATE.user.name,
     city: STATE.user.city,
     mode: STATE.driverMode || 'city',
+    tgId: myTgId,
     active: true,
     until: STATE.shiftUntil,
     hasActiveOrder: false,
     startedAt: new Date().toISOString()
+  });
+  await dbSet('users', STATE.uid, {
+    shiftActive: true,
+    driverLastActivity: new Date().toISOString(),
+    tgId: myTgId
   });
 
   clearTimeout(_shiftTimer);
@@ -774,7 +812,8 @@ async function endShift() {
   });
   await dbSet('users', STATE.uid, {
     totalShifts: STATE.user.totalShifts,
-    avgShiftTrips: STATE.user.avgShiftTrips
+    avgShiftTrips: STATE.user.avgShiftTrips,
+    shiftActive: false
   });
   stopListeningOrders();
   _show('d-offline-box', true);

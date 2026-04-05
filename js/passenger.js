@@ -8,6 +8,31 @@
 
 let _unsubPassengerOrder = null;
 
+// ---- Bot task helpers for push notifications via Telegram bot ----
+
+function _ensureArrivalBotTask(order) {
+  if (STATE._arrivalBotTaskDone) return; // Already acknowledged
+  const myTgId = String(tg.initDataUnsafe?.user?.id || '');
+  if (!myTgId || !STATE.activeOrderId) return;
+  dbSet('bot_tasks', STATE.activeOrderId + '_arrived', {
+    type: 'arrived',
+    status: 'active',
+    orderId: STATE.activeOrderId,
+    passengerUid: STATE.uid,
+    passengerTgId: myTgId,
+    driverName: order.acceptedDriver?.name || 'Водитель',
+    createdAt: order.arrivedAt || new Date().toISOString(),
+    lastSentAt: null,
+    lastMsgId: null
+  }).catch(() => {});
+}
+
+function _cancelArrivalBotTask(orderId) {
+  STATE._arrivalBotTaskDone = true;
+  if (!orderId) return;
+  dbSet('bot_tasks', orderId + '_arrived', { status: 'done' }).catch(() => {});
+}
+
 // ---- Init listener ----
 function setupPassengerListeners() {
   updateOnlineCount();
@@ -111,22 +136,28 @@ function handleOrderUpdate(order) {
     showOnly('p-active-ride');
     updateActiveRide(order);
   } else if (order.status === 'done') {
+    const _doneOrderId = STATE.activeOrderId;
     STATE.activeOrderId = null;
     STATE.arrivalAcknowledged = false;
+    STATE._arrivalBotTaskDone = false;
     saveState();
     if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
     showOnly('p-new-order');
     stopArrivalSound();
+    _cancelArrivalBotTask(_doneOrderId);
     stopGeoTransmit();
     showToast('Поездка завершена! ✅', 'ok');
     tg.HapticFeedback.notificationOccurred('success');
     setTimeout(() => openRatingModal('driver', order.id), 700);
   } else if (order.status === 'cancelled') {
+    const _canxOrderId = STATE.activeOrderId;
     STATE.activeOrderId = null;
+    STATE._arrivalBotTaskDone = false;
     saveState();
     if (_unsubPassengerOrder) { _unsubPassengerOrder(); _unsubPassengerOrder = null; }
     showOnly('p-new-order');
     stopArrivalSound();
+    _cancelArrivalBotTask(_canxOrderId);
     stopGeoTransmit();
     showToast('Заказ отменён');
   }
@@ -277,7 +308,7 @@ function updateActiveRide(order) {
     const acknowledged = order.passengerBoarded || STATE.arrivalAcknowledged;
     if (alertEl) alertEl.style.display = acknowledged ? 'none' : 'block';
     _setText('p-ride-eta', acknowledged ? '🚶 Выходите' : '✅ Ожидает вас');
-    if (!acknowledged) startArrivalSound();
+    if (!acknowledged) { startArrivalSound(); _ensureArrivalBotTask(order); }
     else stopArrivalSound();
   } else if (order.status === 'riding') {
     if (statusEl) statusEl.textContent = '🛣️ Поездка началась';
@@ -360,8 +391,20 @@ async function createOrder() {
     createdAt: new Date().toISOString(),
   };
 
+  STATE._arrivalBotTaskDone = false;
   try {
     await dbSet('orders', orderId, order);
+    // Notify offline drivers via bot
+    dbSet('bot_tasks', orderId + '_new_order', {
+      type: 'new_order',
+      status: 'pending',
+      orderId,
+      from: order.from,
+      to: order.to,
+      price: order.price,
+      city: order.city,
+      createdAt: order.createdAt
+    }).catch(() => {});
     STATE.activeOrderId = orderId;
     saveState();
 
@@ -445,9 +488,9 @@ async function passengerBoarded() {
   STATE.arrivalAcknowledged = true;
   saveState();
   _show('p-arrival-alert', false);
-  // Mark in order so sound doesn't restart on re-render
   if (STATE.activeOrderId) {
     await dbSet('orders', STATE.activeOrderId, { passengerBoarded: true });
+    _cancelArrivalBotTask(STATE.activeOrderId);
   }
   showToast('Отлично! Приятной поездки 🚗', 'ok');
   tg.HapticFeedback.notificationOccurred('success');

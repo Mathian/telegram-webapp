@@ -172,6 +172,27 @@ async function initMain() {
     setupDriverListeners();
   }
   updateOnlineCount();
+  startWebAppHeartbeat();
+}
+
+// ---- WebApp visibility heartbeat (lets bot know if app is open) ----
+function startWebAppHeartbeat() {
+  const myTgId = String(tg.initDataUnsafe?.user?.id || '');
+  const sendHb = () => {
+    if (!STATE.uid) return;
+    const fields = { webAppLastSeen: new Date().toISOString() };
+    if (myTgId) fields.tgId = myTgId;
+    dbSet('users', STATE.uid, fields).catch(() => {});
+  };
+  sendHb();
+  if (window._hbInterval) clearInterval(window._hbInterval);
+  window._hbInterval = setInterval(sendHb, 5000);
+  if (!window._hbVisibilityBound) {
+    window._hbVisibilityBound = true;
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') sendHb();
+    });
+  }
 }
 
 // ---- Screen transitions ----
