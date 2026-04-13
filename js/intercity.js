@@ -327,7 +327,7 @@ async function icDriverContact(orderId) {
   _setText('ic-contact-phone', order.passengerPhone);
   _setText('ic-contact-route', `${order.from} → ${order.to} · ${order.date} ${order.time}`);
   const btn = document.getElementById('ic-call-btn');
-  if (btn) btn.href = 'tel:' + order.passengerPhone;
+  if (btn) btn.onclick = () => { window.location.href = 'tel:' + order.passengerPhone; };
   openModal('mo-ic-contact');
 
   // Register contact
