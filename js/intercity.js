@@ -327,7 +327,13 @@ async function icDriverContact(orderId) {
   _setText('ic-contact-phone', order.passengerPhone);
   _setText('ic-contact-route', `${order.from} → ${order.to} · ${order.date} ${order.time}`);
   const btn = document.getElementById('ic-call-btn');
-  if (btn) btn.onclick = () => { window.location.href = 'tel:' + order.passengerPhone; };
+  if (btn) btn.onclick = () => {
+    const a = document.createElement('a');
+    a.href = 'tel:' + order.passengerPhone;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => document.body.removeChild(a), 300);
+  };
   openModal('mo-ic-contact');
 
   // Register contact
