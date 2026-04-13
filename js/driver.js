@@ -99,7 +99,7 @@ function startListeningOrders() {
     const offerModal = document.getElementById('mo-drv-offer');
     if (offerModal && offerModal.classList.contains('open')) return;
     // Filter by city and driver mode
-    const mode = (STATE.user && STATE.user.driverMode) || STATE.driverMode || 'city';
+    const mode = STATE.driverMode || (STATE.user && STATE.user.driverMode) || 'city';
     const city = STATE.user ? STATE.user.city : '';
     const icCity = STATE.driverIcCity || city;
     const filtered = orders.filter(o => {
@@ -879,6 +879,7 @@ function selDrvMode(mode) {
   STATE.driverMode = mode;
   if (STATE.user) STATE.user.driverMode = mode;
   saveState();
+  if (STATE.uid) dbSet('users', STATE.uid, { driverMode: mode }).catch(() => {});
   document.getElementById('d-mode-city').classList.toggle('on', mode === 'city');
   document.getElementById('d-mode-ic').classList.toggle('on', mode === 'intercity');
   // Show/hide offline city row
