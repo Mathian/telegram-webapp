@@ -12,14 +12,6 @@ const firebaseConfig = {
   appId: "1:713264125968:web:258e0e18654cbdf2ea9295"
 };
 
-// ============================================================
-// ВАЖНО: СМЕНИТЕ ПАРОЛИ ПЕРЕД ДЕПЛОЕМ!
-// ============================================================
-const ADMIN_CREDENTIALS = {
-  'admin': 'taxiadmin2024',   // Смените!
-  'support': 'support2024'    // Смените!
-};
-
 let db = null, isFirebaseReady = false;
 let currentChatId = null, unsubChat = null;
 let allDrivers = [], allOrders = [], allPassengers = [], appSettings = {};
@@ -30,8 +22,6 @@ let _driverSearch = '', _passengerSearch = '', _orderSearch = '', _disputeSearch
 // INIT
 // ============================================================
 window.addEventListener('DOMContentLoaded', () => {
-  const authed = sessionStorage.getItem('taxi_admin_auth');
-  if (authed === 'true') showAdmin();
   initFirebase();
 });
 
@@ -40,31 +30,46 @@ function initFirebase() {
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     isFirebaseReady = true;
-    firebase.auth && firebase.auth().signInAnonymously().catch(e => console.warn('auth:', e.message));
-    console.log('Firebase: OK');
+    firebase.auth().onAuthStateChanged(user => {
+      if (user) {
+        showAdmin();
+      } else {
+        document.getElementById('admin-screen').style.display = 'none';
+        document.getElementById('mob-header').style.display = 'none';
+        document.getElementById('login-screen').style.display = 'flex';
+      }
+    });
   } catch (e) { console.error('Firebase error:', e); }
 }
 
 // ============================================================
 // AUTH
 // ============================================================
-function doLogin() {
-  const user = document.getElementById('login-user').value.trim();
-  const pass = document.getElementById('login-pass').value;
-  if (ADMIN_CREDENTIALS[user] && ADMIN_CREDENTIALS[user] === pass) {
-    sessionStorage.setItem('taxi_admin_auth', 'true');
-    sessionStorage.setItem('taxi_admin_user', user);
-    showAdmin();
-  } else {
-    showToast('Неверный логин или пароль', 'err');
+async function doLogin() {
+  const email = document.getElementById('login-user').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { showToast('Введите email и пароль', 'err'); return; }
+  const btn = document.querySelector('#login-screen .btn');
+  if (btn) btn.disabled = true;
+  try {
+    await firebase.auth().signInWithEmailAndPassword(email, pass);
+  } catch (e) {
+    const msgs = {
+      'auth/invalid-email':     'Неверный формат email',
+      'auth/user-not-found':    'Пользователь не найден',
+      'auth/wrong-password':    'Неверный пароль',
+      'auth/invalid-credential':'Неверный email или пароль',
+      'auth/too-many-requests': 'Слишком много попыток. Подождите.',
+    };
+    showToast(msgs[e.code] || 'Ошибка входа: ' + e.message, 'err');
     document.getElementById('login-pass').value = '';
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
-function logout() {
-  sessionStorage.clear();
-  document.getElementById('admin-screen').style.display = 'none';
-  document.getElementById('login-screen').style.display = 'flex';
+async function logout() {
+  await firebase.auth().signOut();
 }
 
 function showAdmin() {
