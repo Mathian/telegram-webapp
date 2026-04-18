@@ -7,6 +7,19 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/admin.css">
+<style>
+.admin-mo{position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.admin-mo.open{display:flex}
+.admin-mo-box{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.admin-mo-hdr{padding:18px 20px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;justify-content:space-between;gap:12px;position:sticky;top:0;background:var(--bg2);z-index:1}
+.admin-mo-body{padding:18px 20px}
+.ud-stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.ud-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px}
+.ud-stat .val{font-family:'Bebas Neue',sans-serif;font-size:28px;color:var(--y);letter-spacing:1px}
+.ud-stat .lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-top:3px}
+.ord-detail-row td{background:var(--bg3)!important;padding:0!important}
+.ord-detail-inner{padding:12px 16px;border-top:1px solid var(--border)}
+</style>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
@@ -43,8 +56,7 @@
       <span>Администратор</span>
     </div>
     <button class="nav-item active" onclick="showPage('dashboard')" id="nav-dashboard"><span class="ico">📊</span> Дашборд</button>
-    <button class="nav-item" onclick="showPage('drivers')" id="nav-drivers"><span class="ico">🚗</span> Водители<span class="nav-badge" id="nav-pending-badge" style="display:none">0</span></button>
-    <button class="nav-item" onclick="showPage('passengers')" id="nav-passengers"><span class="ico">🧳</span> Пассажиры</button>
+    <button class="nav-item" onclick="showPage('users')" id="nav-users"><span class="ico">👥</span> Пользователи<span class="nav-badge" id="nav-pending-badge" style="display:none">0</span></button>
     <button class="nav-item" onclick="showPage('orders')" id="nav-orders"><span class="ico">📋</span> Заказы</button>
     <button class="nav-item" onclick="showPage('intercity')" id="nav-intercity"><span class="ico">🛣️</span> Межгород</button>
     <button class="nav-item" onclick="showPage('support')" id="nav-support"><span class="ico">💬</span> Поддержка<span class="nav-badge" id="nav-support-badge" style="display:none">0</span></button>
@@ -63,6 +75,17 @@
         <h1>Дашборд</h1>
         <p id="dash-updated">Загрузка...</p>
       </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:16px">
+        <span style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px">ПЕРИОД:</span>
+        <div class="filter-chip on" onclick="setDashPeriod('today')" id="dp-today">Сегодня</div>
+        <div class="filter-chip" onclick="setDashPeriod('all')" id="dp-all">Всё время</div>
+        <div class="filter-chip" onclick="setDashPeriod('range')" id="dp-range">Выбрать...</div>
+        <span id="dp-range-row" style="display:none;gap:6px;align-items:center;flex-wrap:wrap">
+          <input type="date" id="dp-from" class="inp" style="width:130px;margin-bottom:0;display:inline-block" onchange="loadDashboard()">
+          <span style="color:var(--text3)">—</span>
+          <input type="date" id="dp-to" class="inp" style="width:130px;margin-bottom:0;display:inline-block" onchange="loadDashboard()">
+        </span>
+      </div>
       <div class="stats-grid">
         <div class="stat-card"><div class="sc-val" id="st-users">—</div><div class="sc-lbl">Пользователей</div></div>
         <div class="stat-card"><div class="sc-val" id="st-drivers">—</div><div class="sc-lbl">Водителей</div></div>
@@ -72,10 +95,10 @@
         <div class="stat-card"><div class="sc-val" id="st-orders-done">—</div><div class="sc-lbl">Завершено всего</div></div>
         <div class="stat-card"><div class="sc-val" id="st-earn-all" style="font-size:18px">—</div><div class="sc-lbl">Сумма всех заявок</div></div>
         <div class="stat-card"><div class="sc-val" id="st-earn-done" style="font-size:18px">—</div><div class="sc-lbl">Сумма завершённых</div></div>
-        <div class="stat-card"><div class="sc-val" id="st-orders-today">—</div><div class="sc-lbl">Заявок сегодня</div></div>
-        <div class="stat-card"><div class="sc-val" id="st-orders-today-done">—</div><div class="sc-lbl">Завершено сегодня</div></div>
-        <div class="stat-card"><div class="sc-val" id="st-earn-today" style="font-size:18px">—</div><div class="sc-lbl">Сумма заявок сегодня</div></div>
-        <div class="stat-card"><div class="sc-val" id="st-earn-today-done" style="font-size:18px">—</div><div class="sc-lbl">Сумма завершённых сегодня</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-orders-today">—</div><div class="sc-lbl" id="lbl-orders-today">Заявок сегодня</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-orders-today-done">—</div><div class="sc-lbl" id="lbl-orders-today-done">Завершено сегодня</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-earn-today" style="font-size:18px">—</div><div class="sc-lbl" id="lbl-earn-today">Сумма заявок сегодня</div></div>
+        <div class="stat-card"><div class="sc-val" id="st-earn-today-done" style="font-size:18px">—</div><div class="sc-lbl" id="lbl-earn-today-done">Сумма завершённых сегодня</div></div>
       </div>
       <div id="dash-pending-section" style="display:none">
         <div class="warn-box">⚠️ Есть водители ожидающие проверки! <button class="btn-sm btn-primary" onclick="showPage('drivers');filterDrivers('pending')" style="margin-left:8px">Проверить →</button></div>
@@ -86,48 +109,28 @@
       </div>
     </div>
 
-    <!-- DRIVERS -->
-    <div class="page" id="page-drivers">
+    <!-- USERS -->
+    <div class="page" id="page-users">
       <div class="page-header">
-        <h1>Водители</h1>
-        <p>Управление водителями и заявками на регистрацию</p>
+        <h1>Пользователи</h1>
+        <p>Все зарегистрированные пользователи системы</p>
       </div>
-      <div class="info-box">ℹ️ Данные берутся из Firebase + localStorage пользователей. Нажмите "Обновить" если не видите новых заявок.</div>
       <div class="filter-bar">
-        <div class="filter-chip on" onclick="filterDrivers('all')" id="df-all">Все</div>
-        <div class="filter-chip" onclick="filterDrivers('pending')" id="df-pending">⏳ Ожидают проверки</div>
-        <div class="filter-chip" onclick="filterDrivers('approved')" id="df-approved">✓ Активные</div>
-        <div class="filter-chip" onclick="filterDrivers('blocked')" id="df-blocked">✗ Заблокированы</div>
-        <button class="btn-sm btn-view" onclick="loadDrivers()">🔄 Обновить</button>
+        <div class="filter-chip on" onclick="filterUsers('all')"        id="uf-all">Все</div>
+        <div class="filter-chip"    onclick="filterUsers('drivers')"    id="uf-drivers">🚗 Водители</div>
+        <div class="filter-chip"    onclick="filterUsers('passengers')" id="uf-passengers">🧳 Пассажиры</div>
+        <div class="filter-chip"    onclick="filterUsers('pending')"    id="uf-pending">⏳ На проверке</div>
+        <div class="filter-chip"    onclick="filterUsers('blocked')"    id="uf-blocked">🚫 Заблокированы</div>
+        <button class="btn-sm btn-view" onclick="loadUsers()">🔄 Обновить</button>
       </div>
       <div style="margin-bottom:12px">
-        <input class="inp" type="search" placeholder="🔍 Поиск по имени, телефону, городу..." oninput="searchDrivers(this.value)" style="max-width:380px;margin-bottom:0">
+        <input class="inp" type="search" placeholder="🔍 Поиск по имени, телефону, городу..." oninput="searchUsers(this.value)" style="max-width:400px;margin-bottom:0">
       </div>
       <div class="table-wrap">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>Водитель</th><th>Телефон</th><th>Город</th><th>Авто</th><th>Рейтинг</th><th>Поездок</th><th>Статус</th><th>Подписка</th><th>Действия</th></tr></thead>
-            <tbody id="drivers-tbody"><tr><td colspan="9" class="empty">Загрузка...</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- PASSENGERS -->
-    <div class="page" id="page-passengers">
-      <div class="page-header">
-        <h1>Пассажиры</h1>
-        <p>Список зарегистрированных пользователей</p>
-      </div>
-      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
-        <button class="btn-sm btn-view" onclick="loadPassengers()">🔄 Обновить</button>
-        <input class="inp" type="search" placeholder="🔍 Поиск по имени, телефону, городу..." oninput="searchPassengers(this.value)" style="flex:1;min-width:200px;max-width:380px;margin-bottom:0">
-      </div>
-      <div class="table-wrap">
-        <div class="table-scroll">
-          <table>
-            <thead><tr><th>Имя</th><th>Телефон</th><th>Город</th><th>Рейтинг</th><th>Поездок</th><th>Зарег.</th><th>Действия</th></tr></thead>
-            <tbody id="passengers-tbody"><tr><td colspan="7" class="empty">Загрузка...</td></tr></tbody>
+            <thead><tr><th>Пользователь</th><th>Телефон</th><th>Город</th><th>Авто</th><th>Рейтинг</th><th>Статус</th><th></th></tr></thead>
+            <tbody id="users-tbody"><tr><td colspan="7" class="empty">Загрузка...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -153,8 +156,8 @@
       <div class="table-wrap">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>ID</th><th>Пассажир</th><th>Откуда</th><th>Куда</th><th>Цена</th><th>Тип оплаты</th><th>Статус</th><th>Водитель</th><th>Дата и время</th></tr></thead>
-            <tbody id="orders-tbody"><tr><td colspan="9" class="empty">Загрузка...</td></tr></tbody>
+            <thead><tr><th>Пассажир</th><th>Маршрут</th><th>Цена / Оплата</th><th>Статус</th><th>Водитель</th><th>Дата / Время</th><th></th></tr></thead>
+            <tbody id="orders-tbody"><tr><td colspan="7" class="empty">Загрузка...</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -169,7 +172,7 @@
       <div class="table-wrap">
         <div class="table-scroll">
           <table>
-            <thead><tr><th>ID</th><th>Пассажир</th><th>Откуда → Куда</th><th>Дата/Время</th><th>Тип</th><th>Цена</th><th>Статус</th><th>Звонков</th></tr></thead>
+            <thead><tr><th>Пассажир</th><th>Маршрут</th><th>Дата / Время</th><th>Тип</th><th>Цена</th><th>Статус</th><th>Обратился</th><th></th></tr></thead>
             <tbody id="intercity-tbody"><tr><td colspan="8" class="empty">Загрузка...</td></tr></tbody>
           </table>
         </div>
@@ -334,6 +337,43 @@ service cloud.firestore {
       </div>
     </div>
 
+  </div>
+</div>
+
+<!-- USER DETAIL MODAL -->
+<div id="mo-user" class="admin-mo">
+  <div class="admin-mo-box">
+    <div class="admin-mo-hdr">
+      <div>
+        <div id="ud-name" style="font-size:17px;font-weight:800"></div>
+        <div id="ud-meta" style="font-size:12px;color:var(--text3);margin-top:3px"></div>
+      </div>
+      <button onclick="closeUserDetail()" style="background:none;border:none;color:var(--text3);font-size:22px;cursor:pointer;line-height:1;padding:0 4px">✕</button>
+    </div>
+    <div class="admin-mo-body">
+      <!-- Period -->
+      <div style="margin-bottom:16px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:8px">СТАТИСТИКА ЗА ПЕРИОД</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">
+          <div class="filter-chip on" onclick="setUDPeriod('today')"  id="udp-today">Сегодня</div>
+          <div class="filter-chip"    onclick="setUDPeriod('week')"   id="udp-week">7 дней</div>
+          <div class="filter-chip"    onclick="setUDPeriod('month')"  id="udp-month">Месяц</div>
+          <div class="filter-chip"    onclick="setUDPeriod('all')"    id="udp-all">Всё время</div>
+          <div class="filter-chip"    onclick="setUDPeriod('range')"  id="udp-range">Период...</div>
+        </div>
+        <div id="udp-range-row" style="display:none;gap:6px;align-items:center;flex-wrap:wrap;margin-top:8px">
+          <input type="date" id="udp-from" class="inp" style="width:130px;margin-bottom:0" onchange="renderUDStats()">
+          <span style="color:var(--text3)">—</span>
+          <input type="date" id="udp-to"   class="inp" style="width:130px;margin-bottom:0" onchange="renderUDStats()">
+        </div>
+      </div>
+      <!-- Stats -->
+      <div id="ud-stats" class="ud-stats-grid"></div>
+      <!-- Role status -->
+      <div id="ud-roles" style="margin-bottom:16px"></div>
+      <!-- Actions -->
+      <div id="ud-actions" style="display:flex;gap:6px;flex-wrap:wrap;padding-top:14px;border-top:1px solid var(--border)"></div>
+    </div>
   </div>
 </div>
 

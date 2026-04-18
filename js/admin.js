@@ -17,6 +17,9 @@ let currentChatId = null, unsubChat = null;
 let allDrivers = [], allOrders = [], allPassengers = [], appSettings = {};
 let driverFilter = 'all', orderFilter = 'all';
 let _driverSearch = '', _passengerSearch = '', _orderSearch = '', _disputeSearch = '';
+let allUsers = [], userFilter = 'all', _userSearch = '';
+let _dashPeriod = 'today';
+let _currentUD = null, _udPeriod = 'today', _allOrdersCache = null;
 
 // ============================================================
 // INIT
@@ -99,8 +102,7 @@ function showPage(page) {
   if (pg) pg.classList.add('active');
   if (nav) nav.classList.add('active');
   if (page === 'dashboard') loadDashboard();
-  else if (page === 'drivers') loadDrivers();
-  else if (page === 'passengers') loadPassengers();
+  else if (page === 'users') loadUsers();
   else if (page === 'orders') loadOrders();
   else if (page === 'intercity') loadIntercity();
   else if (page === 'support') loadSupportChats();
@@ -166,38 +168,89 @@ async function updateDoc(col, docId, data) {
 // ============================================================
 // DASHBOARD
 // ============================================================
+function getPeriodRange(period, from, to) {
+  const now = new Date();
+  if (period === 'today') {
+    const s = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    return { start: s, end: new Date(s.getTime() + 86400000) };
+  }
+  if (period === 'week') return { start: new Date(now.getTime() - 7 * 86400000), end: now };
+  if (period === 'month') {
+    return { start: new Date(now.getFullYear(), now.getMonth(), 1), end: now };
+  }
+  if (period === 'range' && from && to) {
+    const end = new Date(to); end.setHours(23, 59, 59, 999);
+    return { start: new Date(from), end };
+  }
+  return { start: new Date(0), end: new Date(9999999999999) };
+}
+
+function setDashPeriod(p) {
+  _dashPeriod = p;
+  ['today', 'all', 'range'].forEach(id => document.getElementById('dp-' + id)?.classList.remove('on'));
+  document.getElementById('dp-' + p)?.classList.add('on');
+  const rangeRow = document.getElementById('dp-range-row');
+  if (rangeRow) rangeRow.style.display = p === 'range' ? 'flex' : 'none';
+  if (p !== 'range') loadDashboard();
+}
+
+function _dashPeriodLabel() {
+  if (_dashPeriod === 'today') return 'сегодня';
+  if (_dashPeriod === 'all')   return 'за всё время';
+  const f = document.getElementById('dp-from')?.value;
+  const t = document.getElementById('dp-to')?.value;
+  if (f && t) return `${f} — ${t}`;
+  return 'за период';
+}
+
 async function loadDashboard() {
   document.getElementById('dash-updated').textContent = 'Загрузка...';
   const users = await getAllUsers();
   const orders = await getAllOrders();
+  _allOrdersCache = orders;
   const shifts = await getAllFromFirebase('driver_shifts');
 
   const drivers = users.filter(u => u.role === 'driver');
-  const pending = drivers.filter(d => d.approved === false && !d.blocked);
-  const today = new Date().toDateString();
-  const ordersToday = orders.filter(o => new Date(o.createdAt).toDateString() === today);
+  const pending = drivers.filter(d => d.approved === false && !d.blocked && !d.blockedAsDriver && !d.tempBlocked);
   const now = new Date();
   const onlineShifts = shifts.filter(s => s.active && new Date(s.until) > now);
 
-  const ordersDone = orders.filter(o => o.status === 'done');
-  const ordersTodayDone = ordersToday.filter(o => o.status === 'done');
-  const earningsAll    = orders.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
-  const earningsAllDone = ordersDone.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
-  const earningsToday  = ordersToday.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
-  const earningsTodayDone = ordersTodayDone.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+  // All-time stats
+  const ordersDoneAll = orders.filter(o => o.status === 'done');
+  const earningsAll     = orders.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+  const earningsAllDone = ordersDoneAll.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+
+  // Period stats
+  const dpFrom = document.getElementById('dp-from')?.value;
+  const dpTo   = document.getElementById('dp-to')?.value;
+  const range  = getPeriodRange(_dashPeriod, dpFrom, dpTo);
+  const ordersInPeriod = orders.filter(o => { const d = new Date(o.createdAt); return d >= range.start && d < range.end; });
+  const ordersPeriodDone = ordersInPeriod.filter(o => o.status === 'done');
+  const earningsPeriod     = ordersInPeriod.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+  const earningsPeriodDone = ordersPeriodDone.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+
+  const lbl = _dashPeriodLabel();
 
   document.getElementById('st-users').textContent = users.length;
   document.getElementById('st-drivers').textContent = drivers.length;
   document.getElementById('st-online').textContent = onlineShifts.length;
   document.getElementById('st-pending').textContent = pending.length;
   document.getElementById('st-orders-total').textContent = orders.length;
-  document.getElementById('st-orders-done').textContent = ordersDone.length;
+  document.getElementById('st-orders-done').textContent = ordersDoneAll.length;
   document.getElementById('st-earn-all').textContent = fmtPrice(earningsAll) + '₸';
   document.getElementById('st-earn-done').textContent = fmtPrice(earningsAllDone) + '₸';
-  document.getElementById('st-orders-today').textContent = ordersToday.length;
-  document.getElementById('st-orders-today-done').textContent = ordersTodayDone.length;
-  document.getElementById('st-earn-today').textContent = fmtPrice(earningsToday) + '₸';
-  document.getElementById('st-earn-today-done').textContent = fmtPrice(earningsTodayDone) + '₸';
+  document.getElementById('st-orders-today').textContent = ordersInPeriod.length;
+  document.getElementById('st-orders-today-done').textContent = ordersPeriodDone.length;
+  document.getElementById('st-earn-today').textContent = fmtPrice(earningsPeriod) + '₸';
+  document.getElementById('st-earn-today-done').textContent = fmtPrice(earningsPeriodDone) + '₸';
+  document.getElementById('lbl-orders-today')?.setAttribute('data-base', 'Заявок');
+  document.getElementById('lbl-orders-today-done')?.setAttribute('data-base', 'Завершено');
+  document.getElementById('lbl-earn-today')?.setAttribute('data-base', 'Сумма заявок');
+  document.getElementById('lbl-earn-today-done')?.setAttribute('data-base', 'Сумма завершённых');
+  ['lbl-orders-today','lbl-orders-today-done','lbl-earn-today','lbl-earn-today-done'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = (el.getAttribute('data-base') || '') + ' ' + lbl;
+  });
   document.getElementById('dash-updated').textContent = 'Обновлено: ' + new Date().toLocaleTimeString('ru-RU');
 
   const pendingSection = document.getElementById('dash-pending-section');
@@ -234,85 +287,90 @@ async function loadDashboard() {
 }
 
 // ============================================================
-// DRIVERS
+// USERS (объединяет водителей и пассажиров)
 // ============================================================
-async function loadDrivers() {
-  document.getElementById('drivers-tbody').innerHTML = '<tr><td colspan="9" class="empty">⏳ Загрузка...</td></tr>';
-  const users = await getAllUsers();
-  allDrivers = users.filter(u => u.role === 'driver' || u.appliedForDriverAt);
-  renderDrivers();
-  const pending = allDrivers.filter(d => d.approved === false && !d.blocked);
+async function loadUsers() {
+  document.getElementById('users-tbody').innerHTML = '<tr><td colspan="7" class="empty">⏳ Загрузка...</td></tr>';
+  allUsers = await getAllUsers();
+  _allOrdersCache = null; // сбрасываем кеш заказов при обновлении
+  renderUsers();
+  const pending = allUsers.filter(u => (u.role === 'driver' || u.car) && u.approved === false && !u.blocked && !u.blockedAsDriver && !u.tempBlocked);
   const badge = document.getElementById('nav-pending-badge');
-  if (pending.length) { badge.textContent = pending.length; badge.style.display = 'inline'; }
-  else badge.style.display = 'none';
+  if (badge) { badge.textContent = pending.length; badge.style.display = pending.length ? 'inline' : 'none'; }
 }
 
-function filterDrivers(f) {
-  driverFilter = f;
-  document.querySelectorAll('[id^="df-"]').forEach(el => el.classList.remove('on'));
-  const el = document.getElementById('df-' + f); if (el) el.classList.add('on');
-  renderDrivers();
+function filterUsers(f) {
+  userFilter = f;
+  document.querySelectorAll('[id^="uf-"]').forEach(el => el.classList.remove('on'));
+  document.getElementById('uf-' + f)?.classList.add('on');
+  renderUsers();
 }
 
-function searchDrivers(q) { _driverSearch = q.trim().toLowerCase(); renderDrivers(); }
+function searchUsers(q) { _userSearch = q.trim().toLowerCase(); renderUsers(); }
 
-function renderDrivers() {
-  let list = allDrivers;
-  if (driverFilter === 'pending')  list = list.filter(d => d.approved === false && !d.blocked);
-  else if (driverFilter === 'approved') list = list.filter(d => d.approved === true && !d.blocked);
-  else if (driverFilter === 'blocked')  list = list.filter(d => d.blocked === true);
-  if (_driverSearch) {
-    const q = _driverSearch;
-    list = list.filter(d =>
-      (d.name  || '').toLowerCase().includes(q) ||
-      (d.phone || '').toLowerCase().includes(q) ||
-      (d.city  || '').toLowerCase().includes(q)
+function renderUsers() {
+  let list = allUsers;
+
+  if (userFilter === 'drivers')    list = list.filter(u => u.role === 'driver' || !!u.car);
+  else if (userFilter === 'passengers') list = list.filter(u => u.role === 'passenger' && !u.car);
+  else if (userFilter === 'pending')    list = list.filter(u => (u.role === 'driver' || u.car) && u.approved === false && !u.blocked && !u.blockedAsDriver && !u.tempBlocked);
+  else if (userFilter === 'blocked')    list = list.filter(u => u.blocked || u.blockedAsDriver || u.blockedAsPassenger || u.tempBlocked);
+
+  if (_userSearch) {
+    const q = _userSearch;
+    list = list.filter(u =>
+      (u.name  || '').toLowerCase().includes(q) ||
+      (u.phone || '').toLowerCase().includes(q) ||
+      (u.city  || '').toLowerCase().includes(q)
     );
   }
   list = list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
 
-  const tbody = document.getElementById('drivers-tbody');
-  if (!list.length) {
-    tbody.innerHTML = `<tr><td colspan="9" class="empty">Нет водителей${driverFilter !== 'all' ? ' в этой категории' : ''}</td></tr>`;
-    return;
-  }
-  tbody.innerHTML = list.map(d => {
-    const id = d.id || d.tgId;
-    const safeName = (d.name || '—').replace(/'/g, "\\'");
-    const freeUntil = d.freeUntil ? new Date(d.freeUntil) : null;
-    const isFree = freeUntil && freeUntil > new Date();
-    const subBadge = isFree
-      ? `<span class="badge b-green">Бесплатно до ${fmtDateShort(d.freeUntil)}</span>`
-      : '<span class="badge b-orange">Нужна оплата</span>';
-    const isAdminBlocked = d.tempBlocked && d.tempBlockReason === 'admin';
-    const isBlockedDrv  = d.blocked || d.blockedAsDriver || isAdminBlocked;
-    const isBlockedPax  = d.blockedAsPassenger || isAdminBlocked;
-    const statusBadgeHtml = d.blocked || d.blockedAsDriver || isAdminBlocked
-      ? '<span class="badge b-red">🚫 Заблокирован</span>'
-      : d.approved
-        ? '<span class="badge b-green">✓ Активен</span>'
-        : '<span class="badge b-orange">⏳ На проверке</span>';
+  const tbody = document.getElementById('users-tbody');
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет пользователей</td></tr>'; return; }
+
+  tbody.innerHTML = list.map(u => {
+    const id = u.id || u.tgId;
+    const isDriver = u.role === 'driver' || !!u.car;
+    const isAdminBlocked = u.tempBlocked && u.tempBlockReason === 'admin';
+
+    // Статус водителя
+    let drvBadge = '';
+    if (isDriver) {
+      if (u.blocked || u.blockedAsDriver || isAdminBlocked)
+        drvBadge = `<span class="badge b-red">🚫 Вод.</span>`;
+      else if (u.tempBlocked)
+        drvBadge = `<span class="badge b-orange">🔒 Авто-блок (вод.)</span>`;
+      else if (u.approved === false)
+        drvBadge = `<span class="badge b-yellow">⏳ На проверке</span>`;
+      else
+        drvBadge = `<span class="badge b-green">✓ Водитель</span>`;
+    }
+
+    // Статус пассажира
+    let paxBadge = '';
+    if (u.blockedAsPassenger || isAdminBlocked)
+      paxBadge = `<span class="badge b-red">🚫 Пасс.</span>`;
+    else if (!isDriver)
+      paxBadge = `<span class="badge b-green">✓ Пассажир</span>`;
+
+    const statusHtml = [drvBadge, paxBadge].filter(Boolean).join(' ') ||
+      `<span class="badge" style="background:var(--bg3);color:var(--text3)">—</span>`;
+
     return `
       <tr>
-        <td><div style="font-weight:700">${d.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${d.tgId}</div></td>
-        <td>${d.phone || '—'}</td>
-        <td>${d.city || '—'}</td>
-        <td>${d.car ? `${d.car.brand} ${d.car.year}<br><span style="color:var(--text3);font-size:11px">${d.car.num} · ${d.car.color}</span>` : '<span style="color:var(--text3)">—</span>'}</td>
-        <td>⭐ ${fmtRating(d.rating)}</td>
-        <td>${d.trips || 0}</td>
-        <td>${statusBadgeHtml}</td>
-        <td>${subBadge}</td>
-        <td style="white-space:nowrap">
-          <div style="display:flex;gap:4px;flex-wrap:wrap">
-            ${!d.approved && !isBlockedDrv ? `<button class="btn-sm btn-approve" onclick="approveDriver('${id}')">✓ Одобрить</button>` : ''}
-            ${d.approved && !isBlockedDrv  ? `<button class="btn-sm btn-view"    onclick="sendForReview('${id}','${safeName}')">🔄 На проверку</button>` : ''}
-            <button class="btn-sm btn-reject"  onclick="blockDriverPermanent('${id}','${safeName}')"   ${isBlockedDrv  ? 'disabled' : ''}>🚫 Блок вод.</button>
-            <button class="btn-sm btn-approve" onclick="unblockDriverPermanent('${id}','${safeName}')" ${!isBlockedDrv ? 'disabled' : ''}>✅ Разблок вод.</button>
-            <button class="btn-sm btn-reject"  onclick="blockPassengerPermanent('${id}','${safeName}')"   ${isBlockedPax  ? 'disabled' : ''}>🚫 Блок пасс.</button>
-            <button class="btn-sm btn-approve" onclick="unblockPassengerPermanent('${id}','${safeName}')" ${!isBlockedPax ? 'disabled' : ''}>✅ Разблок пасс.</button>
-            <button class="btn-sm btn-view" onclick="extendFree('${id}')">+30д</button>
-          </div>
+        <td>
+          <div style="font-weight:700">${u.name || '—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${u.tgId || ''}</div>
         </td>
+        <td>${u.phone || '—'}</td>
+        <td>${u.city || '—'}</td>
+        <td style="font-size:12px">
+          ${u.car ? `${u.car.brand || ''} ${u.car.year || ''}<br><span style="color:var(--text3)">${u.car.num || ''} · ${u.car.color || ''}</span>` : '<span style="color:var(--text3)">—</span>'}
+        </td>
+        <td>⭐ ${fmtRating(u.rating)}</td>
+        <td>${statusHtml}</td>
+        <td><button class="btn-sm btn-view" onclick="openUserDetail('${id}')">Подробнее →</button></td>
       </tr>`;
   }).join('');
 }
@@ -326,14 +384,14 @@ async function approveDriver(driverId) {
     if (raw) { const doc = JSON.parse(raw); doc.approved = true; localStorage.setItem(key, JSON.stringify(doc)); }
   } catch (e) {}
   showToast('Водитель одобрен ✅', 'ok');
-  loadDrivers();
+  loadUsers();
 }
 
 async function sendForReview(driverId, name) {
   if (!confirm(`Отправить ${name} на повторную проверку?`)) return;
   await updateDoc('users', driverId, { approved: false });
   showToast('Водитель отправлен на проверку', 'ok');
-  loadDrivers();
+  loadUsers();
 }
 
 async function blockDriverPermanent(id, name) {
@@ -344,7 +402,7 @@ async function blockDriverPermanent(id, name) {
       tempBlocked: true, tempBlockedUntil: null, tempBlockReason: 'admin',
     });
     showToast(`Водитель ${name} заблокирован`, 'ok');
-    loadDrivers();
+    loadUsers();
   } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
@@ -356,7 +414,7 @@ async function unblockDriverPermanent(id, name) {
       tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
     });
     showToast(`Водитель ${name} разблокирован ✅`, 'ok');
-    loadDrivers();
+    loadUsers();
   } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
@@ -368,7 +426,7 @@ async function blockPassengerPermanent(id, name) {
       tempBlocked: true, tempBlockedUntil: null, tempBlockReason: 'admin',
     });
     showToast(`${name} заблокирован как пассажир`, 'ok');
-    loadPassengers();
+    loadUsers();
   } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
@@ -380,7 +438,7 @@ async function unblockPassengerPermanent(id, name) {
       tempBlocked: false, tempBlockedUntil: null, tempBlockReason: null,
     });
     showToast(`${name} разблокирован как пассажир ✅`, 'ok');
-    loadPassengers();
+    loadUsers();
   } catch (e) { showToast('Ошибка: ' + e.message, 'err'); }
 }
 
@@ -388,65 +446,140 @@ async function extendFree(driverId) {
   const newFree = new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString();
   await updateDoc('users', driverId, { freeUntil: newFree, approved: true });
   showToast('Добавлено 30 бесплатных дней ✅', 'ok');
-  loadDrivers();
+  loadUsers();
 }
 
 // ============================================================
-// PASSENGERS
+// USER DETAIL MODAL
 // ============================================================
-async function loadPassengers() {
-  document.getElementById('passengers-tbody').innerHTML = '<tr><td colspan="7" class="empty">⏳ Загрузка...</td></tr>';
-  const users = await getAllUsers();
-  allPassengers = users.filter(u => u.role === 'passenger' || (!u.role && !u.car));
-  renderPassengers();
+async function openUserDetail(uid) {
+  const user = allUsers.find(u => (u.id || u.tgId) === uid);
+  if (!user) return;
+  _currentUD = user;
+  _udPeriod = 'today';
+
+  document.getElementById('ud-name').textContent = user.name || '—';
+  document.getElementById('ud-meta').textContent = [
+    user.phone, user.city,
+    user.tgId ? 'TG: ' + user.tgId : ''
+  ].filter(Boolean).join(' · ');
+
+  // Reset period tabs
+  document.querySelectorAll('[id^="udp-"]').forEach(el => {
+    if (!el.id.includes('range') && !el.id.includes('from') && !el.id.includes('to')) el.classList.remove('on');
+  });
+  document.getElementById('udp-today')?.classList.add('on');
+  document.getElementById('udp-range-row').style.display = 'none';
+
+  document.getElementById('mo-user').classList.add('open');
+  document.getElementById('ud-stats').innerHTML = '<div style="color:var(--text3);font-size:13px;grid-column:1/-1;padding:8px 0">Загрузка статистики...</div>';
+
+  if (!_allOrdersCache) _allOrdersCache = await getAllOrders();
+  renderUDStats();
+  renderUDActions(user);
 }
 
-function searchPassengers(q) { _passengerSearch = q.trim().toLowerCase(); renderPassengers(); }
+function closeUserDetail() {
+  document.getElementById('mo-user').classList.remove('open');
+  _currentUD = null;
+}
 
-function renderPassengers() {
-  let list = allPassengers;
-  if (_passengerSearch) {
-    const q = _passengerSearch;
-    list = list.filter(p =>
-      (p.name  || '').toLowerCase().includes(q) ||
-      (p.phone || '').toLowerCase().includes(q) ||
-      (p.city  || '').toLowerCase().includes(q)
-    );
+function setUDPeriod(p) {
+  _udPeriod = p;
+  document.querySelectorAll('[id^="udp-"]').forEach(el => {
+    if (!el.id.includes('range') && !el.id.includes('from') && !el.id.includes('to')) el.classList.remove('on');
+  });
+  document.getElementById('udp-' + p)?.classList.add('on');
+  document.getElementById('udp-range-row').style.display = p === 'range' ? 'flex' : 'none';
+  renderUDStats();
+}
+
+function renderUDStats() {
+  if (!_currentUD || !_allOrdersCache) return;
+  const user  = _currentUD;
+  const uid   = user.id || user.tgId;
+  const from  = document.getElementById('udp-from')?.value;
+  const to    = document.getElementById('udp-to')?.value;
+  const range = getPeriodRange(_udPeriod, from, to);
+
+  const inPeriod = _allOrdersCache.filter(o => {
+    const d = new Date(o.createdAt); return d >= range.start && d < range.end;
+  });
+
+  // Как пассажир
+  const paxTrips     = inPeriod.filter(o => o.passengerUid === uid && o.status === 'done').length;
+  const paxCancelled = inPeriod.filter(o => o.passengerUid === uid && o.status === 'cancelled').length;
+
+  // Как водитель
+  const isDriver  = user.role === 'driver' || !!user.car;
+  const drvOrders = inPeriod.filter(o => o.acceptedDriver?.uid === uid && o.status === 'done');
+  const drvEarn   = drvOrders.reduce((s, o) => s + Number(o.acceptedPrice || o.price || 0), 0);
+
+  const freeUntil = user.freeUntil ? new Date(user.freeUntil) : null;
+  const subLabel  = freeUntil && freeUntil > new Date()
+    ? `<span class="badge b-green">Бесплатно до ${fmtDateShort(user.freeUntil)}</span>`
+    : (isDriver ? `<span class="badge b-orange">Нужна оплата</span>` : '');
+
+  document.getElementById('ud-stats').innerHTML = `
+    <div class="ud-stat">
+      <div class="val">${paxTrips}</div>
+      <div class="lbl">Поездок (пасс.)</div>
+    </div>
+    <div class="ud-stat">
+      <div class="val" style="color:var(--red)">${paxCancelled}</div>
+      <div class="lbl">Отмен (пасс.)</div>
+    </div>
+    ${isDriver ? `
+    <div class="ud-stat">
+      <div class="val">${drvOrders.length}</div>
+      <div class="lbl">Заказов (вод.)</div>
+    </div>
+    <div class="ud-stat">
+      <div class="val" style="font-size:20px">${fmtPrice(drvEarn)}₸</div>
+      <div class="lbl">Заработано (вод.)</div>
+    </div>` : ''}
+  `;
+
+  document.getElementById('ud-roles').innerHTML = `
+    <div style="font-size:11px;font-weight:700;color:var(--text3);letter-spacing:.5px;margin-bottom:8px">РОЛИ И СТАТУС</div>
+    <div style="display:flex;flex-direction:column;gap:6px;font-size:13px">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+        <span>🧳 Пассажир</span>
+        ${user.blockedAsPassenger ? '<span class="badge b-red">🚫 Заблокирован (адм.)</span>' : user.tempBlocked && !user.blockedAsDriver ? '<span class="badge b-orange">🔒 Авто-блок</span>' : '<span class="badge b-green">✓ Активен</span>'}
+      </div>
+      ${isDriver ? `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;background:var(--card);border-radius:8px;border:1px solid var(--border)">
+        <span>🚗 Водитель ${subLabel}</span>
+        ${user.blocked || user.blockedAsDriver ? '<span class="badge b-red">🚫 Заблокирован (адм.)</span>' : user.tempBlocked ? '<span class="badge b-orange">🔒 Авто-блок</span>' : user.approved === false ? '<span class="badge b-yellow">⏳ На проверке</span>' : '<span class="badge b-green">✓ Активен</span>'}
+      </div>` : ''}
+    </div>
+  `;
+}
+
+function renderUDActions(user) {
+  if (!user) return;
+  const uid      = user.id || user.tgId;
+  const safeName = (user.name || '—').replace(/'/g, "\\'");
+  const isDriver = user.role === 'driver' || !!user.car;
+  const isAdminBlocked = user.tempBlocked && user.tempBlockReason === 'admin';
+  const isDrvBlocked   = user.blocked || user.blockedAsDriver || isAdminBlocked;
+  const isPaxBlocked   = user.blockedAsPassenger || isAdminBlocked;
+  const isPending  = isDriver && user.approved === false && !isDrvBlocked;
+  const isApproved = isDriver && user.approved === true && !isDrvBlocked;
+
+  const btns = [];
+  if (isDriver) {
+    if (isPending)  btns.push(`<button class="btn-sm btn-approve" onclick="approveDriver('${uid}')">✓ Одобрить</button>`);
+    if (isApproved) btns.push(`<button class="btn-sm btn-view" onclick="sendForReview('${uid}','${safeName}')">🔄 На проверку</button>`);
+    if (!isDrvBlocked) btns.push(`<button class="btn-sm btn-reject" onclick="blockDriverPermanent('${uid}','${safeName}')">🚫 Блок водитель</button>`);
+    if (isDrvBlocked)  btns.push(`<button class="btn-sm btn-approve" onclick="unblockDriverPermanent('${uid}','${safeName}')">✅ Разблок водитель</button>`);
+    if (!isDrvBlocked) btns.push(`<button class="btn-sm btn-view" onclick="extendFree('${uid}')">+30 дней</button>`);
   }
-  list = list.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-  const tbody = document.getElementById('passengers-tbody');
-  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет пассажиров</td></tr>'; return; }
-  tbody.innerHTML = list.map(p => {
-    const id = p.id || p.tgId;
-    const safeName     = (p.name || '—').replace(/'/g, "\\'");
-    const isAdminBlockedP = p.tempBlocked && p.tempBlockReason === 'admin';
-    const isBlockedPax = p.blockedAsPassenger || p.blocked || isAdminBlockedP;
-    const isBlockedDrv = p.blockedAsDriver || isAdminBlockedP;
-    return `
-    <tr>
-      <td><div style="font-weight:700">${p.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${p.tgId || ''}</div></td>
-      <td>${p.phone || '—'}</td>
-      <td>${p.city || '—'}</td>
-      <td>⭐ ${fmtRating(p.rating)}</td>
-      <td>${p.trips || 0}</td>
-      <td style="font-size:11px;color:var(--text3)">${fmtDate(p.createdAt)}</td>
-      <td>
-        <div style="display:flex;gap:4px;flex-wrap:wrap">
-          <button class="btn-sm btn-reject"  onclick="blockPassengerPermanent('${id}','${safeName}')"   ${isBlockedPax  ? 'disabled' : ''}>🚫 Блок пасс.</button>
-          <button class="btn-sm btn-approve" onclick="unblockPassengerPermanent('${id}','${safeName}')" ${!isBlockedPax ? 'disabled' : ''}>✅ Разблок пасс.</button>
-          <button class="btn-sm btn-reject"  onclick="blockDriverPermanent('${id}','${safeName}')"   ${isBlockedDrv  ? 'disabled' : ''}>🚫 Блок вод.</button>
-          <button class="btn-sm btn-approve" onclick="unblockDriverPermanent('${id}','${safeName}')" ${!isBlockedDrv ? 'disabled' : ''}>✅ Разблок вод.</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
+  if (!isPaxBlocked) btns.push(`<button class="btn-sm btn-reject" onclick="blockPassengerPermanent('${uid}','${safeName}')">🚫 Блок пассажир</button>`);
+  if (isPaxBlocked)  btns.push(`<button class="btn-sm btn-approve" onclick="unblockPassengerPermanent('${uid}','${safeName}')">✅ Разблок пассажир</button>`);
 
-// Старые функции-обёртки (оставляем для обратной совместимости)
-async function blockUser(id)            { await blockPassengerPermanent(id, id); }
-async function unblockUser(id)          { await unblockPassengerPermanent(id, id); }
-async function blockUserAsDriver(id)    { await blockDriverPermanent(id, id); }
-async function unblockUserAsDriver(id)  { await unblockDriverPermanent(id, id); }
+  document.getElementById('ud-actions').innerHTML = btns.join('') ||
+    '<span style="color:var(--text3);font-size:12px">Нет доступных действий</span>';
+}
 
 // ============================================================
 // ORDERS
@@ -481,22 +614,86 @@ function renderOrders() {
   }
   list = list.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const tbody = document.getElementById('orders-tbody');
-  if (!list.length) { tbody.innerHTML = '<tr><td colspan="9" class="empty">Нет заказов</td></tr>'; return; }
-  tbody.innerHTML = list.map(o => `
-    <tr>
-      <td style="font-size:10px;color:var(--text3)">${(o.id || '—').substring(0, 12)}...</td>
-      <td><div style="font-weight:700">${o.passengerName || '—'}</div><div style="font-size:11px;color:var(--text3)">${o.passengerPhone || ''}</div></td>
-      <td style="font-size:12px;max-width:120px">${o.from || '—'}</td>
-      <td style="font-size:12px;max-width:120px">${o.to || '—'}</td>
-      <td style="font-weight:700;color:var(--y)">${fmtPrice(o.acceptedPrice || o.price)}₸</td>
-      <td><span class="badge ${o.payMethod === 'cash' ? 'b-blue' : 'b-green'}">${o.payMethod === 'cash' ? '💵 Нал' : '📲 Перевод'}</span></td>
-      <td>${statusBadge(o.status)}</td>
-      <td style="font-size:12px">${o.acceptedDriver ? `<div>${o.acceptedDriver.name}</div><div style="font-size:10px;color:var(--text3)">${o.acceptedDriver.phone || ''}</div>` : '—'}</td>
-      <td style="color:var(--text3);font-size:11px;white-space:nowrap">
-        <div>${fmtDate(o.createdAt)}</div>
-        <div style="color:var(--text2)">${fmtTime(o.createdAt)}</div>
-      </td>
-    </tr>`).join('');
+  if (!list.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty">Нет заказов</td></tr>'; return; }
+
+  tbody.innerHTML = list.map(o => {
+    const safeId = (o.id || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    const drvCell = o.acceptedDriver
+      ? `<div style="font-weight:700">${o.acceptedDriver.name || '—'}</div><div style="font-size:11px;color:var(--text3)">${o.acceptedDriver.phone || ''}</div>`
+      : '<span style="color:var(--text3)">—</span>';
+    return `
+      <tr id="orow-${safeId}">
+        <td>
+          <div style="font-weight:700">${o.passengerName || '—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${o.passengerPhone || ''}</div>
+        </td>
+        <td style="max-width:160px;font-size:12px">
+          <div>${o.from || '—'}</div>
+          <div style="color:var(--text3)">→ ${o.to || '—'}</div>
+        </td>
+        <td>
+          <div style="font-weight:700;color:var(--y)">${fmtPrice(o.acceptedPrice || o.price)}₸</div>
+          <span class="badge ${o.payMethod === 'cash' ? 'b-blue' : 'b-green'}" style="font-size:10px">${o.payMethod === 'cash' ? '💵 Нал' : '📲 Перевод'}</span>
+        </td>
+        <td>${statusBadge(o.status)}</td>
+        <td style="font-size:12px">${drvCell}</td>
+        <td style="color:var(--text3);font-size:11px;white-space:nowrap">
+          <div>${fmtDate(o.createdAt)}</div>
+          <div style="color:var(--text2)">${fmtTime(o.createdAt)}</div>
+        </td>
+        <td><button class="btn-sm btn-view" onclick="toggleOrderDetails('${safeId}')" id="obtn-${safeId}">▼ Детали</button></td>
+      </tr>
+      <tr id="odetails-${safeId}" class="ord-detail-row" style="display:none">
+        <td colspan="7"><div class="ord-detail-inner">${buildOrderDetails(o)}</div></td>
+      </tr>`;
+  }).join('');
+}
+
+function buildOrderDetails(o) {
+  const parts = [`<div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;margin-bottom:8px">`];
+  parts.push(`<span><span style="color:var(--text3)">ID:</span> <span style="font-family:monospace;font-size:11px">${o.id || '—'}</span></span>`);
+  if (o.paxCount)   parts.push(`<span><span style="color:var(--text3)">Пассажиров:</span> ${o.paxCount}</span>`);
+  if (o.childSeat)  parts.push(`<span>🪑 Детское кресло</span>`);
+  if (o.comment)    parts.push(`<span><span style="color:var(--text3)">Коммент:</span> ${o.comment}</span>`);
+  if (o.city)       parts.push(`<span><span style="color:var(--text3)">Город:</span> ${o.city}</span>`);
+  parts.push('</div>');
+
+  // Итог для завершённых
+  if (o.status === 'done' && o.acceptedDriver) {
+    parts.push(`<div style="padding:8px 12px;background:rgba(34,197,94,.07);border-radius:8px;border:1px solid rgba(34,197,94,.2);font-size:12px;margin-bottom:8px">
+      ✅ Завершён · Водитель: <strong>${o.acceptedDriver.name || '—'}</strong> ${o.acceptedDriver.phone ? '· ' + o.acceptedDriver.phone : ''} · Итог: <strong style="color:var(--y)">${fmtPrice(o.acceptedPrice || o.price)}₸</strong>
+    </div>`);
+  }
+
+  // Отмена
+  if (o.status === 'cancelled') {
+    const who = o.cancelledBy === 'passenger' ? '🧳 Пассажир' : o.cancelledBy === 'driver' ? '🚗 Водитель' : '—';
+    parts.push(`<div style="padding:8px 12px;background:rgba(239,68,68,.07);border-radius:8px;border:1px solid rgba(239,68,68,.2);font-size:12px;margin-bottom:8px">
+      <strong style="color:var(--red)">Отмена</strong> · Отменил: ${who}
+      ${o.cancelledAt ? ' · ' + fmtDate(o.cancelledAt) + ' ' + fmtTime(o.cancelledAt) : ''}
+      ${o.cancelReason ? '<br>Причина: ' + o.cancelReason : ''}
+      ${o.disputeId ? `<br>Диспут: <span style="font-family:monospace;color:var(--orange)">${o.disputeId}</span>` : ''}
+    </div>`);
+  }
+
+  // Жалоба / диспут вне отмены
+  if (o.disputeId && o.status !== 'cancelled') {
+    parts.push(`<div style="padding:8px 12px;background:rgba(249,115,22,.07);border-radius:8px;border:1px solid rgba(249,115,22,.2);font-size:12px">
+      ⚔️ Диспут: <span style="font-family:monospace;color:var(--orange)">${o.disputeId}</span>
+      ${o.complaint ? '<br>' + o.complaint : ''}
+    </div>`);
+  }
+
+  return parts.join('');
+}
+
+function toggleOrderDetails(safeId) {
+  const row = document.getElementById('odetails-' + safeId);
+  const btn = document.getElementById('obtn-' + safeId);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : 'table-row';
+  if (btn) btn.textContent = open ? '▼ Детали' : '▲ Скрыть';
 }
 
 // ============================================================
@@ -507,17 +704,54 @@ async function loadIntercity() {
   const ic = orders.filter(o => o.type === 'intercity').sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const tbody = document.getElementById('intercity-tbody');
   if (!ic.length) { tbody.innerHTML = '<tr><td colspan="8" class="empty">Нет межгородних заявок</td></tr>'; return; }
-  tbody.innerHTML = ic.map(o => `
-    <tr>
-      <td style="font-size:10px;color:var(--text3)">${(o.id || '—').substring(0, 10)}...</td>
-      <td><div style="font-weight:700">${o.passengerName || '—'}</div><div style="font-size:11px;color:var(--text3)">${o.passengerPhone || ''}</div></td>
-      <td style="font-size:12px"><div>${o.from || '—'}</div><div style="color:var(--text3)">→ ${o.to || '—'}</div></td>
-      <td>${o.date || '—'} ${o.time || '—'}</td>
-      <td>${o.icType || '—'}</td>
-      <td style="color:var(--y);font-weight:700">${fmtPrice(o.price)}₸</td>
-      <td>${statusBadge(o.status)}</td>
-      <td>${(o.contacts || []).length}</td>
-    </tr>`).join('');
+  tbody.innerHTML = ic.map(o => {
+    const safeId = (o.id || '').replace(/[^a-zA-Z0-9_-]/g, '');
+    const contacts = o.contacts || [];
+    const accepted = contacts.find(c => c.accepted) || (o.acceptedContact || null);
+    return `
+      <tr id="icrow-${safeId}">
+        <td>
+          <div style="font-weight:700">${o.passengerName || '—'}</div>
+          <div style="font-size:11px;color:var(--text3)">${o.passengerPhone || ''}</div>
+        </td>
+        <td style="font-size:12px">
+          <div>${o.from || '—'}</div>
+          <div style="color:var(--text3)">→ ${o.to || '—'}</div>
+        </td>
+        <td style="white-space:nowrap;font-size:12px">
+          <div>${o.date || '—'}</div>
+          <div style="color:var(--text3)">${o.time || ''}</div>
+        </td>
+        <td style="font-size:12px">${o.icType || '—'}</td>
+        <td style="color:var(--y);font-weight:700">${fmtPrice(o.price)}₸</td>
+        <td>${statusBadge(o.status)}</td>
+        <td style="font-size:12px">
+          ${accepted
+            ? `<div style="font-weight:700">${accepted.name || '—'}</div><div style="color:var(--text3);font-size:11px">${accepted.phone || ''}</div>`
+            : contacts.length
+              ? `<span style="color:var(--text3)">${contacts.length} обращ.</span>`
+              : '<span style="color:var(--text3)">—</span>'}
+        </td>
+        <td><button class="btn-sm btn-view" onclick="toggleIcDetails('${safeId}')" id="icbtn-${safeId}">▼ Детали</button></td>
+      </tr>
+      <tr id="icdetails-${safeId}" class="ord-detail-row" style="display:none">
+        <td colspan="8"><div class="ord-detail-inner">
+          <div style="font-size:11px;font-family:monospace;color:var(--text3);margin-bottom:6px">ID: ${o.id || '—'}</div>
+          ${o.comment ? `<div style="font-size:12px;margin-bottom:6px">Коммент: ${o.comment}</div>` : ''}
+          ${contacts.length ? `<div style="font-size:12px"><span style="color:var(--text3)">Обратились водители:</span> ${contacts.map(c => `<strong>${c.name || '?'}</strong>${c.phone ? ' (' + c.phone + ')' : ''}`).join(', ')}</div>` : ''}
+          ${o.cancelledBy ? `<div style="font-size:12px;color:var(--red);margin-top:6px">Отменил: ${o.cancelledBy === 'passenger' ? '🧳 Пассажир' : '🚗 Водитель'}</div>` : ''}
+        </div></td>
+      </tr>`;
+  }).join('');
+}
+
+function toggleIcDetails(safeId) {
+  const row = document.getElementById('icdetails-' + safeId);
+  const btn = document.getElementById('icbtn-' + safeId);
+  if (!row) return;
+  const open = row.style.display !== 'none';
+  row.style.display = open ? 'none' : 'table-row';
+  if (btn) btn.textContent = open ? '▼ Детали' : '▲ Скрыть';
 }
 
 // ============================================================
@@ -1071,8 +1305,10 @@ function showToast(msg, type = '') {
   toastTimer = setTimeout(() => t.classList.remove('show'), 3000);
 }
 
-// Auto-refresh dashboard every 60s
+// Auto-refresh every 60s
 setInterval(() => {
   const active = document.querySelector('.page.active');
-  if (active && active.id === 'page-dashboard') loadDashboard();
+  if (!active) return;
+  if (active.id === 'page-dashboard') loadDashboard();
+  else if (active.id === 'page-users') loadUsers();
 }, 60000);
