@@ -955,53 +955,45 @@ function openPassengerMap() {
   STATE.mapFrom = STATE.role === 'driver' ? 's-driver' : null;
   showScreen('s-passenger-map');
 
-  // Init map after screen is visible
   setTimeout(() => {
     const mapEl = document.getElementById('passenger-map');
     if (!mapEl) return;
 
-    // Default coords (will be updated by real geo)
     const defaultLat = 51.18;
     const defaultLng = 71.45;
 
     if (!_passengerMap) {
-      _passengerMap = L.map('passenger-map', { zoomControl: true }).setView([defaultLat, defaultLng], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '© OpenStreetMap',
-        maxZoom: 19
+      _passengerMap = L.map('passenger-map', {
+        zoomControl: true,
+        attributionControl: true
+      }).setView([defaultLat, defaultLng], 15);
+
+      L.maplibreGL({
+        style: 'https://tiles.openfreemap.org/styles/dark',
       }).addTo(_passengerMap);
 
-      // Custom yellow marker
       const icon = L.divIcon({
-        html: '<div style="background:var(--y,#f5c518);width:20px;height:20px;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.4)"></div>',
-        iconSize: [20, 20],
-        iconAnchor: [10, 10],
+        html: '<div style="width:22px;height:22px;background:#f5c518;border-radius:50%;border:3px solid #fff;box-shadow:0 0 0 2px rgba(245,197,24,.4),0 3px 10px rgba(0,0,0,.6)"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
         className: ''
       });
       _passengerMarker = L.marker([defaultLat, defaultLng], { icon }).addTo(_passengerMap);
-      _passengerMarker.bindPopup('📍 Пассажир').openPopup();
+      _passengerMarker.bindPopup('📍 Пассажир');
     } else {
       _passengerMap.invalidateSize();
     }
 
-    // Sync button states based on current order status
-    _syncMapButtons();
-
-    // Subscribe to order updates for live geo
     if (STATE.driverActiveOrderId) {
       if (_mapOrderUnsub) _mapOrderUnsub();
       _mapOrderUnsub = onDocSnapshot('orders', STATE.driverActiveOrderId, order => {
-        if (!order) return;
-        _syncMapButtons(order);
-        if (order.passengerGeo) {
-          const { lat, lng } = order.passengerGeo;
-          const pos = [lat, lng];
-          _passengerMarker.setLatLng(pos);
-          _passengerMap.panTo(pos);
-          _passengerMarker.getPopup() && _passengerMarker.openPopup();
-          // Update coords text on driver screen too
-          _setText('d-geo-coords', `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
-        }
+        if (!order || !order.passengerGeo) return;
+        const { lat, lng } = order.passengerGeo;
+        const pos = [lat, lng];
+        _passengerMarker.setLatLng(pos);
+        _passengerMap.panTo(pos);
+        _passengerMarker.openPopup();
+        _setText('d-geo-coords', `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
       });
     }
   }, 150);
@@ -1011,25 +1003,6 @@ function closePassengerMap() {
   if (_mapOrderUnsub) { _mapOrderUnsub(); _mapOrderUnsub = null; }
   if (_passengerMap) { _passengerMap.remove(); _passengerMap = null; _passengerMarker = null; }
   showScreen('s-driver');
-}
-
-function _syncMapButtons(order) {
-  // Determine order status — use passed order or infer from STATE
-  const status = order ? order.status : (STATE.driverActiveOrderId ? 'active' : null);
-  const arrivedBtn = document.getElementById('map-btn-arrived');
-  const startBtn = document.getElementById('map-btn-start');
-  if (!arrivedBtn || !startBtn) return;
-  if (status === 'active') {
-    arrivedBtn.disabled = false;
-    startBtn.disabled = true;
-  } else if (status === 'arrived') {
-    arrivedBtn.disabled = true;
-    arrivedBtn.textContent = '✅ Прибыл';
-    startBtn.disabled = false;
-  } else if (status === 'riding') {
-    arrivedBtn.disabled = true;
-    startBtn.disabled = true;
-  }
 }
 
 // ---- Driver history ----

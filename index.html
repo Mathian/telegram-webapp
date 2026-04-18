@@ -7,6 +7,14 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.css">
+<script src="https://unpkg.com/maplibre-gl@3.6.2/dist/maplibre-gl.js"></script>
+<script src="https://unpkg.com/@maplibre/maplibre-gl-leaflet@0.0.20/leaflet-maplibre-gl.js"></script>
+<style>
+  #passenger-map canvas { filter: brightness(0.95) saturate(0.85); }
+  #passenger-map .maplibregl-ctrl-logo { display: none !important; }
+  #passenger-map .leaflet-control-attribution { font-size: 9px; opacity: 0.45; }
+</style>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -527,12 +535,7 @@
     <div class="hdr-left"><h2>📍 КАРТА</h2></div>
     <button class="role-sw" onclick="closePassengerMap()">← Назад</button>
   </div>
-  <div id="passenger-map" style="width:100%;height:calc(100vh - 56px - 110px)"></div>
-  <div style="padding:10px 12px;display:flex;gap:8px;background:var(--bg2);border-top:1px solid var(--border)">
-    <button class="btn btn-out btn-sm" style="flex:1" id="map-btn-arrived" onclick="driverArrived();closePassengerMap()">📍 Я приехал</button>
-    <button class="btn btn-y btn-sm" style="flex:1" id="map-btn-start" onclick="startRide();closePassengerMap()">▶ Начать</button>
-    <button class="btn btn-sm" style="flex:1;background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.3)" onclick="driverCancelRide()">✗ Отмена</button>
-  </div>
+  <div id="passenger-map" style="width:100%;height:calc(100vh - 56px)"></div>
 </div>
 
 <!-- ===================== SUPPORT CHAT ===================== -->
